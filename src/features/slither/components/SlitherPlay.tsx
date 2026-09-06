@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
-import { useSession } from 'next-auth/react'
 import { getSlitherRoomCode, getSlitherSeed } from '@/shared/lib/slitherEngine'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
 import { useSlitherStates } from '../states/slitherStates'
@@ -23,7 +22,6 @@ const ONLINE_BOTS = 4
 
 export default function SlitherPlay({ initialRoom = '' }: Props) {
   const router = useRouter()
-  const { data: session } = useSession()
   const { payloadGetSlitherArena, setGetSlitherArena, setSlitherReset } = useSlitherStates()
   const { slitherArena, storeSlitherState } = useSlitherControllers()
   const [guest] = useState(() => ({
@@ -49,8 +47,8 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
   })
 
   const data = useMemo(() => {
-    const identityId = session?.user?.id || guest.id
-    const identityName = (filters.nameDraft || session?.user?.name || guest.name || 'Ular').slice(0, 14)
+    const identityId = guest.id
+    const identityName = (filters.nameDraft || guest.name || 'Ular').slice(0, 14)
     const players = slitherArena.data?.players ?? []
     const isReady = !!identityId
     const isConnected = filters.mode !== 'solo' && !!payloadGetSlitherArena.code
@@ -74,7 +72,7 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
       isSolo: !isConnected,
       leaderboard,
     }
-  }, [session, guest, filters, slitherArena, board, payloadGetSlitherArena.code])
+  }, [guest, filters, slitherArena, board, payloadGetSlitherArena.code])
 
   const editSlitherName = (value: string) => {
     setFilters((prev) => ({ ...prev, nameDraft: value.slice(0, 14) }))

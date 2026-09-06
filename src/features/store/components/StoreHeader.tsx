@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import LocaleToggle from '@/shared/components/reusable/LocaleToggle'
-import AuthStatus from '@/features/auth/components/AuthStatus'
 
 interface Props {
   activeLocale: string
@@ -43,7 +42,6 @@ export default function StoreHeader({
 
       {/* Di layar lebar semuanya tampil sejajar. */}
       <div className="mt-1 hidden shrink-0 items-center gap-3 sm:flex">
-        <AuthStatus />
         <LocaleToggle activeLocale={activeLocale} switchLabel={switchLabel} onEditLocale={onEditStoreLocale} />
       </div>
 
@@ -79,7 +77,6 @@ export default function StoreHeader({
               className="fixed inset-0 z-30 cursor-default"
             />
             <div className="absolute right-0 z-40 mt-2 flex w-max flex-col items-end gap-3 rounded-2xl border border-[#26262b] bg-[#121214] p-3 shadow-lg">
-              <AuthStatus />
               <LocaleToggle
                 activeLocale={activeLocale}
                 switchLabel={switchLabel}
