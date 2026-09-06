@@ -1,15 +1,19 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useRubikStates } from '../states/rubikStates'
 import type { RubikTurnKey } from '@/shared/lib/rubikEngine'
 import GameAudio, { type GameAudioCue } from '@/shared/components/reusable/GameAudio'
 import GameTurnStatus from '@/shared/components/reusable/GameTurnStatus'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
 import RubikHeader from './RubikHeader'
-import RubikCube from './RubikCube'
 import RubikControls from './RubikControls'
 import RubikResult from './RubikResult'
+
+// Three.js hanya dibutuhkan setelah kubusnya benar-benar digambar, jadi dipisah dari muatan awal
+// halaman supaya pengunjung tidak mengunduh dan mengurai pustaka tiga dimensi lebih dulu.
+const RubikCube = dynamic(() => import('./RubikCube'), { ssr: false })
 
 export default function RubikPlay() {
   const { rubikGame, setRubikInit, setRubikTurn, setRubikScramble, setRubikRestart } = useRubikStates()
