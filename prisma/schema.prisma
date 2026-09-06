@@ -14,46 +14,6 @@ datasource db {
   directUrl = env("SUPABASE_DIRECT_URL")
 }
 
-model Task {
-  id          String   @id @default(cuid())
-  title       String
-  description String?  @db.Text
-  status      Status   @default(PENDING)
-  priority    Priority @default(MEDIUM)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("tasks")
-}
-
-enum Status {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-model UnoRoom {
-  id          String   @id @default(cuid())
-  code        String   @unique
-  status      String   @default("lobby")
-  hostToken   String
-  state       Json
-  playerTotal Int      @default(1)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([status, updatedAt])
-  @@map("uno_rooms")
-}
-
 model GameRoom {
   id        String   @id @default(cuid())
   code      String   @unique

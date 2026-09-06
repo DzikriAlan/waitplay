@@ -27,6 +27,7 @@ const globalForRooms = globalThis as unknown as {
   gameRoomsSeen: Map<string, number> | undefined
   gameRoomsSeenWrites: Map<string, number> | undefined
   gameRoomsFallback: boolean | undefined
+  gameRoomsPurgedAt: number | undefined
 }
 const memoryRooms = globalForRooms.gameRooms ?? new Map<string, GameRoomRow>()
 globalForRooms.gameRooms = memoryRooms
@@ -172,6 +173,31 @@ export const updateGameRoomSeen = async (code: string, token: string, isFresh = 
 
   seenWrites.set(key, now)
   return updateGameRoomRow(code, { players: room.players })
+}
+
+// Ruangan tidak pernah dihapus oleh permainan itu sendiri, jadi tanpa penyapuan barisnya menumpuk
+// selamanya berikut kolom JSON keadaannya. Penyapuan dititipkan ke jalur pembuatan ruangan supaya
+// tidak membutuhkan penjadwal terpisah, dan dijaga agar berjalan paling sering sekali per jam per
+// proses. Kegagalannya sengaja didiamkan: ini pekerjaan rumah tangga, bukan bagian dari permintaan.
+const PURGE_INTERVAL = 60 * 60 * 1000
+const PURGE_AGE = 24 * 60 * 60 * 1000
+
+export const postGameRoomPurge = async () => {
+  if (getIsMemoryMode()) {
+    const limit = Date.now() - PURGE_AGE
+    memoryRooms.forEach((room, code) => {
+      if (room.updatedAt.getTime() < limit) memoryRooms.delete(code)
+    })
+    return
+  }
+
+  const now = Date.now()
+  if (now - (globalForRooms.gameRoomsPurgedAt ?? 0) < PURGE_INTERVAL) return
+  globalForRooms.gameRoomsPurgedAt = now
+
+  await prisma.gameRoom
+    .deleteMany({ where: { updatedAt: { lt: new Date(now - PURGE_AGE) } } })
+    .catch(() => null)
 }
 
 export const updateGameRoomRow = async (code: string, patch: GameRoomPatch): Promise<GameRoomRow | null> => {

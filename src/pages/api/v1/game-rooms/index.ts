@@ -6,7 +6,7 @@ import {
   getGameRoomToken,
   getGameRoomView,
 } from '@/shared/lib/gameRoom'
-import { getGameRoomRow, postGameRoomRow } from '@/shared/lib/gameRoomStore'
+import { getGameRoomRow, postGameRoomPurge, postGameRoomRow } from '@/shared/lib/gameRoomStore'
 import { postApiError, postApiMethodNotAllowed, postApiSuccess } from '@/shared/lib/apiResponse'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -46,6 +46,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Penyapuan tidak ditunggu supaya pembuatan ruangan tidak ikut melambat karenanya.
+    void postGameRoomPurge()
+
     const token = getGameRoomToken()
     const room = await postRoom(token)
     if (!room) {
