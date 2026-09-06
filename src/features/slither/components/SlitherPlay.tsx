@@ -2,15 +2,20 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
+import dynamic from 'next/dynamic'
 import { getSlitherRoomCode, getSlitherSeed } from '@/shared/lib/slitherEngine'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
 import { useSlitherStates } from '../states/slitherStates'
 import { useSlitherControllers } from '../controllers/slitherControllers'
 import type { DataSlitherPlayer } from '../types/slitherTypes'
-import SlitherArena, { type SlitherBoardRow } from './SlitherArena'
+import type { SlitherBoardRow } from './SlitherArena'
 import SlitherLobby from './SlitherLobby'
 import SlitherHud from './SlitherHud'
 import SlitherTouch, { type SlitherControl } from './SlitherTouch'
+
+// Arena tiga dimensi baru dipakai setelah pemain masuk permainan, sedangkan lobinya tidak
+// membutuhkan Three.js sama sekali, jadi pustakanya dipisah dari muatan awal halaman.
+const SlitherArena = dynamic(() => import('./SlitherArena'), { ssr: false })
 
 interface Props {
   initialRoom?: string
