@@ -542,62 +542,6 @@ export default function StoreCover({ gameId, tone, accent }: Props) {
     )
   }
 
-  if (gameId === 'piano') {
-    const whiteKeys = [0, 1, 2, 3, 4, 5, 6, 7]
-    const blackKeys = [0, 1, 3, 4, 5]
-    const tiles = [
-      { x: 96, y: 42, fill: '#e0452a' },
-      { x: 148, y: 16, fill: '#2ec4b6' },
-      { x: 200, y: 56, fill: '#3b6fd4' },
-      { x: 252, y: 28, fill: '#8b5cf6' },
-    ]
-    const KEY_WIDTH = 26
-    return (
-      <svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" className={frame} aria-hidden="true">
-        <rect width="320" height="200" fill={PAPER} />
-        <rect x="0" y="0" width="68" height="200" fill={tone} />
-        <circle cx="34" cy="38" r="30" fill={accent} />
-        {tiles.map((tile) => (
-          <rect
-            key={tile.x}
-            x={tile.x}
-            y={tile.y}
-            width="42"
-            height="30"
-            rx="5"
-            fill={tile.fill}
-            stroke={INK}
-            strokeWidth="3"
-          />
-        ))}
-        {whiteKeys.map((key) => (
-          <rect
-            key={`white-${key}`}
-            x={88 + key * KEY_WIDTH}
-            y="112"
-            width={KEY_WIDTH}
-            height="68"
-            fill="#f7f4ec"
-            stroke={INK}
-            strokeWidth="3"
-          />
-        ))}
-        {blackKeys.map((key) => (
-          <rect
-            key={`black-${key}`}
-            x={88 + (key + 1) * KEY_WIDTH - 8}
-            y="112"
-            width="16"
-            height="42"
-            fill={INK}
-          />
-        ))}
-        <rect x="88" y="104" width={KEY_WIDTH * 8} height="8" fill={INK} />
-        {grain}
-      </svg>
-    )
-  }
-
   return (
     <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: tone }}>
       <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#0a0a0b]">Soon</span>

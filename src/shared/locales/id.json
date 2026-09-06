@@ -195,22 +195,6 @@
             "Permainan berakhir bila papan penuh dan tidak ada lagi pasangan yang bisa disatukan.",
             "Tahan ubin terbesar di satu sudut dan susun angka menurun dari sudut itu supaya papan tidak cepat buntu."
           ]
-        },
-        "piano": {
-          "title": "Panduan Piano",
-          "goal": "Tekan nada yang jatuh tepat saat menyentuh garis ketuk sampai lagunya utuh dimainkan.",
-          "play": [
-            "Pilih satu lagu dari daftar, lalu tunggu hitungan mundur tiga detik sebelum nada pertama turun.",
-            "Papan dibagi menjadi empat jalur; jalur paling kiri untuk nada terendah dan paling kanan untuk nada tertinggi.",
-            "Tekan tuts di bawah jalur saat nada menyentuh garis putih, atau pakai tombol D, F, J, dan K di papan ketik.",
-            "Ketukan tepat waktu bernilai penuh, ketukan yang meleset sedikit tetap dihitung dengan nilai setengah.",
-            "Tuts yang ditekan tanpa nada tetap berbunyi, jadi papan ini juga bisa dipakai bermain bebas."
-          ],
-          "win": [
-            "Nada yang terlewat memutus rentetan dan menurunkan akurasi di akhir lagu.",
-            "Rentetan panjang menambah nilai setiap ketukan, jadi menjaga kesinambungan lebih berharga daripada mengejar nada sulit.",
-            "Skor tertinggi tiap lagu disimpan di perangkatmu, jadi kamu bisa mencoba mengalahkannya kapan saja."
-          ]
         }
       }
     }

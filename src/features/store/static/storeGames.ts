@@ -183,18 +183,4 @@ export const STORE_GAMES: StoreGame[] = [
     modeLabel: 'Online',
     isAvailable: true,
   },
-  {
-    id: 'piano',
-    name: 'Piano',
-    category: 'music',
-    categoryLabel: 'Music',
-    durationValue: '3-5',
-    playerValue: '1',
-    path: '/piano',
-    tone: '#141416',
-    accent: '#f0b429',
-    mode: 'solo',
-    modeLabel: 'Solo',
-    isAvailable: true,
-  },
 ]

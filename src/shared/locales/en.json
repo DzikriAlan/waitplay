@@ -195,22 +195,6 @@
             "The game ends when the board is full and no pair can be merged any more.",
             "Keep your biggest tile in one corner and order the numbers downwards from it so the board does not lock up."
           ]
-        },
-        "piano": {
-          "title": "Piano Guide",
-          "goal": "Hit every falling note right as it touches the strike line until the song is played through.",
-          "play": [
-            "Pick a song from the list, then wait for the three second countdown before the first note drops.",
-            "The board is split into four lanes; the leftmost lane holds the lowest notes and the rightmost the highest.",
-            "Press the key under a lane as the note touches the white line, or use D, F, J and K on a keyboard.",
-            "Notes struck on time score in full, while slightly early or late hits still count for half.",
-            "Keys pressed with no note still sound, so the board doubles as a free play piano."
-          ],
-          "win": [
-            "A missed note breaks your streak and lowers the accuracy shown at the end of the song.",
-            "A long streak adds bonus points to every hit, so keeping the chain alive is worth more than chasing hard notes.",
-            "The best score per song is kept on your device, so you can come back and beat it any time."
-          ]
         }
       }
     }
