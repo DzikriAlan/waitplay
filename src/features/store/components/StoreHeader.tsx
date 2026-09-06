@@ -31,20 +31,13 @@ export default function StoreHeader({
 
   return (
     <header className="flex shrink-0 items-start justify-between gap-3">
-      <div className="flex min-w-0 items-center gap-2 min-[360px]:gap-3">
-        <img
-          src="/waitplay-mark.png"
-          alt="Waitplay"
-          className="h-9 w-9 shrink-0 rounded-[10px] min-[360px]:h-11 min-[360px]:w-11 sm:h-14 sm:w-14 lg:h-16 lg:w-16"
-        />
-        <div className="min-w-0">
-          <p className="text-[38px] font-black uppercase leading-[0.82] tracking-[-0.04em] text-[#f2ede1] min-[360px]:text-[46px] sm:text-[56px] lg:text-[68px]">
-            Waitplay
-          </p>
-          <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.32em] text-[#f2ede1]/85 sm:mt-2 sm:text-[12px] sm:tracking-[0.4em]">
-            Game Collection
-          </p>
-        </div>
+      <div className="min-w-0">
+        <p className="text-[38px] font-black uppercase leading-[0.82] tracking-[-0.04em] text-[#f2ede1] min-[360px]:text-[46px] sm:text-[56px] lg:text-[68px]">
+          Waitplay
+        </p>
+        <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.32em] text-[#f2ede1]/85 sm:mt-2 sm:text-[12px] sm:tracking-[0.4em]">
+          Game Collection
+        </p>
       </div>
 
       {/* Di layar lebar semuanya tampil sejajar. */}

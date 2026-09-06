@@ -5,7 +5,7 @@ export default function Document() {
     <Html lang="en">
       <Head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" href="/waitplay-mark.png" />
+        <link rel="icon" type="image/png" href="/favicon-mark.png" />
       </Head>
       <body>
         <Main />
