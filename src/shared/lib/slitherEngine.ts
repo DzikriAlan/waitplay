@@ -10,6 +10,9 @@ export const SLITHER_SEGMENT_SPACING = 8
 export const SLITHER_SNAKE_RADIUS = 11
 export const SLITHER_HEAD_RADIUS = 16
 export const SLITHER_BASE_SEGMENTS = 16
+// Skor awal ular kita dibuat sudah di atas ambang sprint supaya begitu ronde mulai, sprint
+// langsung bisa dipakai tanpa harus makan dulu.
+export const SLITHER_START_SCORE = 12
 export const SLITHER_FOOD_PER_SEGMENT = 2
 export const SLITHER_EAT_RADIUS = 26
 export const SLITHER_FOOD_COUNT = 620

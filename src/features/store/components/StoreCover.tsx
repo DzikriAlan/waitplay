@@ -542,6 +542,45 @@ export default function StoreCover({ gameId, tone, accent }: Props) {
     )
   }
 
+  if (gameId === 'slither') {
+    // Ular meliuk seperti huruf S dengan badan bersisik, kepala menganga, dan butir makanan
+    // di sekitarnya. Titik penting ditaruh di tengah supaya tetap terlihat setelah dipangkas jadi kotak.
+    const body = 'M64 168C92 118 128 208 156 148C180 98 210 148 232 106'
+    const pellets = [
+      { cx: 100, cy: 96, r: 7, fill: PAPER },
+      { cx: 176, cy: 176, r: 8, fill: '#e0452a' },
+      { cx: 210, cy: 62, r: 6, fill: PAPER },
+      { cx: 126, cy: 62, r: 5, fill: '#e0452a' },
+    ]
+    return (
+      <svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" className={frame} aria-hidden="true">
+        <rect width="320" height="200" fill={tone} />
+        <circle cx="282" cy="34" r="40" fill={accent} />
+        {pellets.map((pellet) => (
+          <circle
+            key={`${pellet.cx}-${pellet.cy}`}
+            cx={pellet.cx}
+            cy={pellet.cy}
+            r={pellet.r}
+            fill={pellet.fill}
+            stroke={INK}
+            strokeWidth="3"
+          />
+        ))}
+        <path d={body} fill="none" stroke={INK} strokeWidth="34" strokeLinecap="round" />
+        <path d={body} fill="none" stroke={accent} strokeWidth="26" strokeLinecap="round" />
+        <path d={body} fill="none" stroke={PAPER} strokeWidth="4" strokeLinecap="round" strokeDasharray="1 15" />
+        <g stroke={INK} strokeWidth="5" strokeLinejoin="round">
+          <path d="M246 88l14-9m-14 9l14 4" stroke="#e0452a" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="232" cy="106" r="19" fill={accent} />
+        </g>
+        <circle cx="239" cy="99" r="5.5" fill={PAPER} stroke={INK} strokeWidth="2" />
+        <circle cx="240" cy="98" r="2.2" fill={INK} />
+        {grain}
+      </svg>
+    )
+  }
+
   return (
     <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: tone }}>
       <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#0a0a0b]">Soon</span>

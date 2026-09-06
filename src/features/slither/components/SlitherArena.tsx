@@ -22,6 +22,7 @@ import {
   SLITHER_SAMPLE_COUNT,
   SLITHER_SEGMENT_SPACING,
   SLITHER_SKINS,
+  SLITHER_START_SCORE,
   SLITHER_TURN_RATE,
   getSlitherBotName,
   getSlitherBotTarget,
@@ -780,7 +781,7 @@ export default function SlitherArena({
       self.y = spawn.y
       self.angle = Math.random() * Math.PI * 2
       self.targetAngle = self.angle
-      self.score = 0
+      self.score = SLITHER_START_SCORE
       self.alive = true
       self.boosting = false
       self.speeding = false
