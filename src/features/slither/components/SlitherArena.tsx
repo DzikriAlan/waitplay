@@ -12,7 +12,8 @@ import {
   SLITHER_BOOST_DRAIN,
   SLITHER_BOOST_MIN_SCORE,
   SLITHER_BOOST_SPEED,
-  SLITHER_BOT_RESPAWN_MS,
+  SLITHER_BOOST_START_BUFFER,
+  SLITHER_BOT_CHASE,
   SLITHER_DROP_MAX,
   SLITHER_DROP_MIN,
   SLITHER_EAT_RADIUS,
@@ -59,7 +60,8 @@ interface Props {
   controlRef: MutableRefObject<SlitherControl>
   onSubmitSlitherFrame: (frame: DataSlitherPlayer) => void
   onSubmitSlitherScore: (score: number) => void
-  onSubmitSlitherDead: () => void
+  onSubmitSlitherDead: (placement: number, total: number) => void
+  onSubmitSlitherWin: (total: number) => void
   onSubmitSlitherBoard: (rows: SlitherBoardRow[]) => void
 }
 
@@ -87,6 +89,7 @@ export default function SlitherArena({
   onSubmitSlitherFrame,
   onSubmitSlitherScore,
   onSubmitSlitherDead,
+  onSubmitSlitherWin,
   onSubmitSlitherBoard,
 }: Props) {
   const mountRef = useRef<HTMLDivElement | null>(null)
@@ -97,6 +100,7 @@ export default function SlitherArena({
     onSubmitSlitherFrame,
     onSubmitSlitherScore,
     onSubmitSlitherDead,
+    onSubmitSlitherWin,
     onSubmitSlitherBoard,
   })
   const sceneRef = useRef<{ start: () => void; stop: () => void; respawn: () => void } | null>(null)
@@ -107,6 +111,7 @@ export default function SlitherArena({
     frameRef.current.onSubmitSlitherFrame = onSubmitSlitherFrame
     frameRef.current.onSubmitSlitherScore = onSubmitSlitherScore
     frameRef.current.onSubmitSlitherDead = onSubmitSlitherDead
+    frameRef.current.onSubmitSlitherWin = onSubmitSlitherWin
     frameRef.current.onSubmitSlitherBoard = onSubmitSlitherBoard
   }, [
     remotePlayers,
@@ -114,6 +119,7 @@ export default function SlitherArena({
     onSubmitSlitherFrame,
     onSubmitSlitherScore,
     onSubmitSlitherDead,
+    onSubmitSlitherWin,
     onSubmitSlitherBoard,
   ])
 
@@ -758,11 +764,16 @@ export default function SlitherArena({
       score: 0,
       alive: true,
       boosting: false,
+      // Sprint pakai jeda: `speeding` keadaan nyata frame ini, dipakai juga buat mempercepat
+      // kamera supaya lajunya tidak terasa "ngambang".
+      speeding: false,
       fade: 1,
       path: [] as number[][],
       segments: [] as number[][],
       lastScoreSent: -1,
     }
+    // Satu ronde "ular terakhir bertahan": tidak ada respawn, dan hasil hanya dikabarkan sekali.
+    const round = { finished: false }
     const resetSelf = () => {
       const spawn = getSlitherSpawnPoint(getSlitherRandom((seed ^ Date.now()) >>> 0))
       self.x = spawn.x
@@ -772,6 +783,7 @@ export default function SlitherArena({
       self.score = 0
       self.alive = true
       self.boosting = false
+      self.speeding = false
       self.fade = 1
       self.lastScoreSent = -1
       self.path = seededPath(self.x, self.y, self.angle)
@@ -825,6 +837,14 @@ export default function SlitherArena({
       bot.fade = 1
       bot.respawnAt = 0
       bot.path = seededPath(bot.x, bot.y, bot.angle)
+      bot.segments = []
+    }
+
+    // "Main lagi" memulai ronde baru dari nol: ular kita dan semua ular komputer hidup lagi.
+    const resetRound = () => {
+      round.finished = false
+      resetSelf()
+      bots.forEach(resetBot)
     }
 
     // Lawan online
@@ -977,28 +997,47 @@ export default function SlitherArena({
       }
       bots.forEach((bot) => {
         if (!bot.alive) {
+          // Ronde "ular terakhir bertahan": yang mati tetap mati sampai ronde baru.
           bot.fade = Math.max(0, bot.fade - dt * 1.6)
-          if (now >= bot.respawnAt) resetBot(bot)
         }
         if (bot.alive) {
           bot.wander += (Math.random() - 0.5) * 0.6 * dt
           bot.wander = Math.max(-1, Math.min(1, bot.wander))
           const hazards = collectHazards(bot.id)
-          const target = getSlitherBotTarget(bot.x, bot.y, bot.angle, activeFood, hazards, bot.wander)
-          bot.angle = getSlitherSteered(bot.angle, target, SLITHER_TURN_RATE * 0.75 * dt)
-          const speed = SLITHER_BASE_SPEED * 0.94
+
+          // Mangsa = kepala terdekat (ular kita atau ular komputer lain) yang tidak jauh lebih besar,
+          // supaya ular komputer berani memburu dan memotong, bukan cuma cari makan.
+          let prey: { x: number; y: number; angle: number; score: number } | null = null
+          let preyGap = SLITHER_BOT_CHASE * SLITHER_BOT_CHASE
+          const considerPrey = (px: number, py: number, pa: number, ps: number) => {
+            if (ps > bot.score + 24) return
+            const gap = (px - bot.x) ** 2 + (py - bot.y) ** 2
+            if (gap < preyGap) {
+              preyGap = gap
+              prey = { x: px, y: py, angle: pa, score: ps }
+            }
+          }
+          if (self.alive) considerPrey(self.x, self.y, self.angle, self.score)
+          for (let index = 0; index < bots.length; index += 1) {
+            const other = bots[index]
+            if (other.id === bot.id || !other.alive) continue
+            considerPrey(other.x, other.y, other.angle, other.score)
+          }
+
+          const target = getSlitherBotTarget(bot.x, bot.y, bot.angle, activeFood, hazards, bot.wander, prey)
+          bot.angle = getSlitherSteered(bot.angle, target, SLITHER_TURN_RATE * 0.92 * dt)
+          // Saat mangsa dalam jangkauan, ular komputer ikut ngebut — tetap di bawah sprint pemain
+          // supaya masih bisa dikecoh.
+          const chasing = !!prey && preyGap < SLITHER_BOT_CHASE * SLITHER_BOT_CHASE
+          const speed = SLITHER_BASE_SPEED * (chasing ? 1.12 : 0.97)
           advanceSnake(bot, speed, dt)
 
           bot.score += eatFood(bot.x, bot.y, now)
 
-          if (getSlitherOutOfBounds(bot.x, bot.y)) {
-            bot.alive = false
-            bot.respawnAt = now + SLITHER_BOT_RESPAWN_MS
-          }
+          if (getSlitherOutOfBounds(bot.x, bot.y)) bot.alive = false
           if (bot.alive && self.alive && self.segments.length) {
             if (getSlitherHit(bot.x, bot.y, self.segments, getSlitherRadius(self.score) * 2)) {
               bot.alive = false
-              bot.respawnAt = now + SLITHER_BOT_RESPAWN_MS
             }
           }
           for (let index = 0; index < bots.length && bot.alive; index += 1) {
@@ -1006,7 +1045,6 @@ export default function SlitherArena({
             if (other.id === bot.id || !other.alive || !other.segments.length) continue
             if (getSlitherHit(bot.x, bot.y, other.segments, getSlitherRadius(other.score) * 1.9)) {
               bot.alive = false
-              bot.respawnAt = now + SLITHER_BOT_RESPAWN_MS
             }
           }
           if (!bot.alive) dropFood(bot.segments, bot.score)
@@ -1027,8 +1065,15 @@ export default function SlitherArena({
         // Stik kiri di layar sentuh menimpa arah penunjuk; tombol kanan menyalakan sprint.
         const control = controlRef.current
         if (control.angle !== null) self.targetAngle = control.angle
+        // Sprint dijaga stabil dengan jeda: kalau belum ngebut butuh skor di atas ambang + buffer
+        // untuk mulai, kalau sudah ngebut baru berhenti saat skor menyentuh ambang. Tanpa ini
+        // sprint kedip-kedip di sekitar batas skor dan terasa lambat.
+        const wantBoost = self.boosting || control.boost
+        if (!wantBoost) self.speeding = false
+        else if (self.speeding) self.speeding = self.score > SLITHER_BOOST_MIN_SCORE
+        else self.speeding = self.score > SLITHER_BOOST_MIN_SCORE + SLITHER_BOOST_START_BUFFER
+        const canBoost = self.speeding
         // Belok sedikit lebih berat saat ngebut supaya ngebut terasa punya risiko.
-        const canBoost = (self.boosting || control.boost) && self.score > SLITHER_BOOST_MIN_SCORE
         const turnRate = SLITHER_TURN_RATE * (canBoost ? 0.78 : 1)
         self.angle = getSlitherSteered(self.angle, self.targetAngle, turnRate * dt)
         const speed = canBoost ? SLITHER_BOOST_SPEED : SLITHER_BASE_SPEED
@@ -1054,9 +1099,22 @@ export default function SlitherArena({
             self.alive = false
           }
         }
+        const aliveOthers = () =>
+          bots.reduce((sum, bot) => sum + (bot.alive ? 1 : 0), 0) +
+          frameRef.current.remotePlayers.reduce((sum, rival) => sum + (rival.alive ? 1 : 0), 0)
+        const rosterTotal = botCount + 1 + frameRef.current.remotePlayers.length
+
         if (!self.alive) {
           dropFood(self.segments, self.score)
-          frameRef.current.onSubmitSlitherDead()
+          if (!round.finished) {
+            round.finished = true
+            // Peringkat = jumlah ular yang masih hidup saat kita mati, plus satu.
+            frameRef.current.onSubmitSlitherDead(aliveOthers() + 1, rosterTotal)
+          }
+        } else if (!round.finished && aliveOthers() === 0) {
+          // Ular terakhir yang bertahan: ronde selesai, kita menang.
+          round.finished = true
+          frameRef.current.onSubmitSlitherWin(rosterTotal)
         }
 
         const rounded = Math.round(self.score)
@@ -1177,8 +1235,10 @@ export default function SlitherArena({
       sendFrame(now)
       sendBoard(now)
 
-      cameraTarget.x += (self.x - cameraTarget.x) * Math.min(1, dt * 6)
-      cameraTarget.z += (self.y - cameraTarget.z) * Math.min(1, dt * 6)
+      // Kamera mengejar lebih rapat saat sprint supaya lajunya benar-benar terasa, bukan "ngambang".
+      const camFollow = self.speeding ? 9 : 6
+      cameraTarget.x += (self.x - cameraTarget.x) * Math.min(1, dt * camFollow)
+      cameraTarget.z += (self.y - cameraTarget.z) * Math.min(1, dt * camFollow)
       camera.position.set(cameraTarget.x + CAMERA_OFFSET.x, CAMERA_OFFSET.y, cameraTarget.z + CAMERA_OFFSET.z)
       camera.lookAt(cameraTarget)
 
@@ -1196,7 +1256,7 @@ export default function SlitherArena({
       animationId = 0
     }
 
-    sceneRef.current = { start, stop, respawn: resetSelf }
+    sceneRef.current = { start, stop, respawn: resetRound }
     if (frameRef.current.isActive) start()
 
     return () => {

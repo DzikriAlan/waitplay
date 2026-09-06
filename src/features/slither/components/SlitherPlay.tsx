@@ -51,6 +51,9 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
     isFullscreen: false,
     score: 0,
     isDead: false,
+    isWin: false,
+    placement: 0,
+    total: 0,
     respawnNonce: 0,
   })
 
@@ -65,11 +68,19 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
     // bukan skor papan yang baru diperbarui tiap setengah detik, supaya urutannya selalu mengikuti
     // langkah yang sedang berjalan.
     const getLiveRow = (row: SlitherBoardRow) => (row.playerId === identityId ? { ...row, score: filters.score } : row)
-    const leaderboard = [...board]
+    const ranked = [...board]
       .map(getLiveRow)
       .sort((left, right) => right.score - left.score)
-      .slice(0, 6)
-      .map((row) => ({ ...row, isSelf: row.playerId === identityId }))
+      .map((row, index) => ({ ...row, rank: index + 1, isSelf: row.playerId === identityId }))
+
+    // Selalu tampilkan baris kita: kalau tidak masuk enam besar, sisakan satu slot terakhir
+    // supaya urutannya jadi 1, 2, 3, 4, 5, lalu peringkat kita yang sebenarnya.
+    const LEADER_LIMIT = 6
+    const selfRow = ranked.find((row) => row.isSelf)
+    const leaderboard =
+      selfRow && selfRow.rank > LEADER_LIMIT
+        ? [...ranked.slice(0, LEADER_LIMIT - 1), selfRow]
+        : ranked.slice(0, LEADER_LIMIT)
 
     return {
       identityId,
@@ -93,25 +104,26 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
   const editSlitherRoom = (value: string) => {
     setFilters((prev) => ({ ...prev, roomCode: value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) }))
   }
+  const enterArena = { isDead: false, isWin: false, placement: 0, total: 0, score: 0 }
   const submitSlitherSolo = () => {
     setGetSlitherArena({ code: '', playerId: data.identityId, name: data.identityName })
-    setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'solo', isDead: false, score: 0 }))
+    setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'solo', ...enterArena }))
   }
   const submitSlitherGlobal = () => {
     setGetSlitherArena({ code: GLOBAL_ROOM, playerId: data.identityId, name: data.identityName })
-    setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'online', roomCode: GLOBAL_ROOM, isDead: false, score: 0 }))
+    setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'online', roomCode: GLOBAL_ROOM, ...enterArena }))
   }
   const submitSlitherCreate = () => {
     const code = getSlitherRoomCode()
     setGetSlitherArena({ code, playerId: data.identityId, name: data.identityName })
-    setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'room', roomCode: code, isDead: false, score: 0 }))
+    setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'room', roomCode: code, ...enterArena }))
     router.replace({ pathname: '/slither', query: { room: code } }, undefined, { shallow: true })
   }
   const submitSlitherJoin = () => {
     const code = filters.roomCode.trim()
     if (code.length < 3) return
     setGetSlitherArena({ code, playerId: data.identityId, name: data.identityName })
-    setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'room', isDead: false, score: 0 }))
+    setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'room', ...enterArena }))
     router.replace({ pathname: '/slither', query: { room: code } }, undefined, { shallow: true })
   }
   const submitSlitherFrame = (frame: DataSlitherPlayer) => {
@@ -123,11 +135,22 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
   const submitSlitherBoard = (rows: SlitherBoardRow[]) => {
     setBoard(rows)
   }
-  const submitSlitherDead = () => {
-    setFilters((prev) => (prev.isDead ? prev : { ...prev, isDead: true }))
+  const submitSlitherDead = (placement: number, total: number) => {
+    setFilters((prev) => (prev.isDead || prev.isWin ? prev : { ...prev, isDead: true, placement, total }))
+  }
+  const submitSlitherWin = (total: number) => {
+    setFilters((prev) => (prev.isDead || prev.isWin ? prev : { ...prev, isWin: true, placement: 1, total }))
   }
   const submitSlitherRespawn = () => {
-    setFilters((prev) => ({ ...prev, isDead: false, score: 0, respawnNonce: prev.respawnNonce + 1 }))
+    setFilters((prev) => ({
+      ...prev,
+      isDead: false,
+      isWin: false,
+      placement: 0,
+      total: 0,
+      score: 0,
+      respawnNonce: prev.respawnNonce + 1,
+    }))
   }
   const editSlitherFullscreen = () => {
     const getFullscreenElement = () => document.fullscreenElement
@@ -229,12 +252,16 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
         onSubmitSlitherFrame={submitSlitherFrame}
         onSubmitSlitherScore={submitSlitherScore}
         onSubmitSlitherDead={submitSlitherDead}
+        onSubmitSlitherWin={submitSlitherWin}
         onSubmitSlitherBoard={submitSlitherBoard}
       />
 
       <SlitherHud
         score={filters.score}
         isDead={filters.isDead}
+        isWin={filters.isWin}
+        placement={filters.placement}
+        total={filters.total}
         isFullscreen={filters.isFullscreen}
         leaderboard={data.leaderboard}
         onSubmitSlitherRespawn={submitSlitherRespawn}

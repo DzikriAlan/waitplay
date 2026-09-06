@@ -4,12 +4,16 @@ interface LeaderRow {
   playerId: string
   name: string
   score: number
+  rank: number
   isSelf: boolean
 }
 
 interface Props {
   score: number
   isDead: boolean
+  isWin: boolean
+  placement: number
+  total: number
   isFullscreen: boolean
   leaderboard: LeaderRow[]
   onSubmitSlitherRespawn: () => void
@@ -20,6 +24,9 @@ interface Props {
 export default function SlitherHud({
   score,
   isDead,
+  isWin,
+  placement,
+  total,
   isFullscreen,
   leaderboard,
   onSubmitSlitherRespawn,
@@ -38,9 +45,9 @@ export default function SlitherHud({
                   key={row.playerId}
                   className={`flex items-center gap-2 rounded-md px-1 text-[11px] ${
                     row.isSelf ? 'bg-[#f2ede1]/10 text-[#f2ede1]' : 'text-[#a29d93]'
-                  }`}
+                  } ${index > 0 && row.rank > leaderboard[index - 1].rank + 1 ? 'mt-1 border-t border-[#26262b] pt-1' : ''}`}
                 >
-                  <span className="w-4 text-right font-black">{index + 1}</span>
+                  <span className="w-4 text-right font-black">{row.rank}</span>
                   <span className="max-w-[120px] truncate font-semibold">{row.name}</span>
                   <span className="ml-auto font-black">{row.score}</span>
                 </li>
@@ -75,11 +82,17 @@ export default function SlitherHud({
         </div>
       </div>
 
-      {isDead ? (
+      {isDead || isWin ? (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm">
           <div className="w-full max-w-[320px] rounded-2xl border border-[#26262b] bg-[#121214] p-6 text-center">
-            <p className="text-base font-black uppercase tracking-tight text-[#f2ede1]">Ular kamu mati</p>
-            <p className="mt-2 text-[12px] text-[#9aa3b2]">Skor akhir {score}. Coba lagi dari tengah arena.</p>
+            <p className="text-base font-black uppercase tracking-tight text-[#f2ede1]">
+              {isWin ? 'Kamu menang' : 'Ular kamu mati'}
+            </p>
+            <p className="mt-2 text-[12px] text-[#9aa3b2]">
+              {isWin
+                ? `Ular terakhir yang bertahan. Skor akhir ${score}.`
+                : `Peringkat ${placement} dari ${total}. Skor akhir ${score}.`}
+            </p>
             <button
               type="button"
               onClick={onSubmitSlitherRespawn}

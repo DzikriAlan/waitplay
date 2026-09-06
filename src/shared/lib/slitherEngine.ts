@@ -3,7 +3,8 @@
 
 export const SLITHER_ARENA_RADIUS = 1150
 export const SLITHER_BASE_SPEED = 172
-export const SLITHER_BOOST_SPEED = 310
+// Sprint dinaikkan supaya bedanya dengan kecepatan dasar jelas terasa dan tidak "ngambang".
+export const SLITHER_BOOST_SPEED = 372
 export const SLITHER_TURN_RATE = 4.2
 export const SLITHER_SEGMENT_SPACING = 8
 export const SLITHER_SNAKE_RADIUS = 11
@@ -13,7 +14,10 @@ export const SLITHER_FOOD_PER_SEGMENT = 2
 export const SLITHER_EAT_RADIUS = 26
 export const SLITHER_FOOD_COUNT = 620
 export const SLITHER_BOOST_MIN_SCORE = 6
-export const SLITHER_BOOST_DRAIN = 5
+// Sprint mulai nyala kalau skor sudah di atas ambang + buffer ini, dan baru mati saat skor
+// menyentuh ambang. Jeda ini yang bikin sprint tidak kedip-kedip di sekitar batas skor.
+export const SLITHER_BOOST_START_BUFFER = 4
+export const SLITHER_BOOST_DRAIN = 3.4
 export const SLITHER_FRAME_INTERVAL = 70
 export const SLITHER_STALE_MS = 4000
 export const SLITHER_SAMPLE_COUNT = 44
@@ -205,14 +209,27 @@ export const getSlitherSteered = (angle: number, target: number, maxDelta: numbe
   return angle + clamped
 }
 
-export const SLITHER_BOT_AVOID = 96
+// Radius menghindar dikecilkan supaya ular komputer main lebih rapat/berani, bukan langsung kabur.
+export const SLITHER_BOT_AVOID = 78
 export const SLITHER_BOT_EDGE = 190
 export const SLITHER_BOT_RESPAWN_MS = 2600
+// Sejauh ini ular komputer mau mengejar kepala mangsa, dan sejauh apa tikungannya memimpin
+// di depan mangsa supaya bisa memotong jalan.
+export const SLITHER_BOT_CHASE = 380
+export const SLITHER_BOT_LEAD = 130
 
 export const getSlitherBotName = (index: number) => `Komputer ${index + 1}`
 
-// Otak ular komputer: hindari tepi arena, menjauh dari badan ular terdekat, lalu kejar makanan
-// terdekat dengan sedikit gerak acak supaya jalurnya tidak kaku.
+export interface SlitherPrey {
+  x: number
+  y: number
+  angle: number
+  score: number
+}
+
+// Otak ular komputer: hindari tepi arena, lalu — kalau ada mangsa dalam jangkauan — buru kepalanya
+// dengan memimpin tikungan di depan hidungnya; kalau tidak, menjauh dari badan terdekat lalu kejar
+// makanan terdekat dengan sedikit gerak acak supaya jalurnya tidak kaku.
 export const getSlitherBotTarget = (
   x: number,
   y: number,
@@ -220,10 +237,29 @@ export const getSlitherBotTarget = (
   foods: number[][],
   hazards: number[][],
   wander: number,
+  prey: SlitherPrey | null = null,
 ) => {
   if (Math.hypot(x, y) > SLITHER_ARENA_RADIUS - SLITHER_BOT_EDGE) {
     return Math.atan2(-y, -x) + wander * 0.3
   }
+
+  // Saat sedang menikung untuk memotong mangsa, ular komputer lebih cuek pada badan lain supaya
+  // benar-benar berani menutup jalur, bukan mengerem di detik terakhir.
+  let preyDistance = Infinity
+  let chaseAngle = 0
+  if (prey) {
+    const dx = prey.x - x
+    const dy = prey.y - y
+    preyDistance = Math.hypot(dx, dy)
+    if (preyDistance < SLITHER_BOT_CHASE) {
+      const lead = Math.min(SLITHER_BOT_LEAD, preyDistance * 0.55)
+      const aimX = prey.x + Math.cos(prey.angle) * lead
+      const aimY = prey.y + Math.sin(prey.angle) * lead
+      chaseAngle = Math.atan2(aimY - y, aimX - x)
+    }
+  }
+  const isHunting = preyDistance < SLITHER_BOT_CHASE
+  const avoidRange = isHunting ? SLITHER_BOT_AVOID * 0.55 : SLITHER_BOT_AVOID
 
   let repelX = 0
   let repelY = 0
@@ -231,12 +267,14 @@ export const getSlitherBotTarget = (
     const dx = x - hazards[index][0]
     const dy = y - hazards[index][1]
     const distance = Math.hypot(dx, dy)
-    if (distance > 0 && distance < SLITHER_BOT_AVOID) {
-      repelX += (dx / distance) * (SLITHER_BOT_AVOID - distance)
-      repelY += (dy / distance) * (SLITHER_BOT_AVOID - distance)
+    if (distance > 0 && distance < avoidRange) {
+      repelX += (dx / distance) * (avoidRange - distance)
+      repelY += (dy / distance) * (avoidRange - distance)
     }
   }
   if (repelX !== 0 || repelY !== 0) return Math.atan2(repelY, repelX)
+
+  if (isHunting) return chaseAngle + wander * 0.06
 
   let bestDistance = Infinity
   let bestAngle = angle + wander
