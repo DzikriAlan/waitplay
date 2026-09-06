@@ -7,8 +7,10 @@ import { postApiMethodNotAllowed } from '@/shared/lib/apiResponse'
 
 const PING_INTERVAL = 15000
 // Siaran dalam proses menutup kebutuhan utama; pembacaan cadangan tetap ada supaya perubahan dari
-// instans lain ikut terkirim tanpa membebani basis data secara berlebihan.
-const SAFETY_INTERVAL = 4000
+// instans lain ikut terkirim. Denyutnya dilonggarkan dan tidak lagi memaksa bacaan segar, jadi
+// singgahan proses boleh menjawab: kehadiran tidak butuh ketelitian empat detik, sedangkan langkah
+// lawan dari instans yang sama sudah dikabarkan seketika lewat getGameRoomSubscription.
+const SAFETY_INTERVAL = 15000
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return postApiMethodNotAllowed(res, 'GET')
@@ -59,8 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Denyut kehadiran menandai kursi masih dipakai supaya tidak diambil alih pemain lain.
   const safetyTimer = setInterval(() => {
     if (res.writableEnded || res.destroyed) return clearStream()
-    // Baris dibaca segar supaya langkah lawan yang ditulis instans lain tidak tertahan singgahan.
-    void updateGameRoomSeen(code, token, true).then((room) => postRoomState(room))
+    void updateGameRoomSeen(code, token).then((room) => postRoomState(room))
   }, SAFETY_INTERVAL)
   const pingTimer = setInterval(() => {
     if (res.writableEnded || res.destroyed) return clearStream()
