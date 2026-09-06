@@ -27,7 +27,7 @@ const ONLINE_BOTS = 4
 
 export default function SlitherPlay({ initialRoom = '' }: Props) {
   const router = useRouter()
-  const { payloadGetSlitherArena, setGetSlitherArena, setSlitherReset } = useSlitherStates()
+  const { setGetSlitherArena, setSlitherReset } = useSlitherStates()
   const { slitherArena, storeSlitherState } = useSlitherControllers()
   const [guest] = useState(() => ({
     id:
@@ -38,6 +38,8 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
   const [board, setBoard] = useState<SlitherBoardRow[]>([])
   // Masukan stik ditulis ke ref, bukan state, supaya gerakan jempol tidak memicu render tiap frame.
   const controlRef = useRef<SlitherControl>({ angle: null, boost: false })
+  // Elemen yang diminta layar penuh, dipisah dari HUD supaya kontrol sentuh ikut terbawa.
+  const stageRef = useRef<HTMLDivElement>(null)
   const [device, setDevice] = useState({ isTouch: false, isPortrait: false })
   const [filters, setFilters] = useState({
     phase: 'lobby' as 'lobby' | 'arena',
@@ -46,6 +48,7 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
     nameDraft: '',
     skinIndex: 0,
     isExitOpen: false,
+    isFullscreen: false,
     score: 0,
     isDead: false,
     respawnNonce: 0,
@@ -56,10 +59,14 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
     const identityName = (filters.nameDraft || guest.name || 'Ular').slice(0, 14)
     const players = slitherArena.data?.players ?? []
     const isReady = !!identityId
-    const isConnected = filters.mode !== 'solo' && !!payloadGetSlitherArena.code
     const seedSource = filters.mode === 'solo' ? `SOLO-${identityId}` : filters.roomCode || GLOBAL_ROOM
 
+    // Baris kita sendiri dituakan dengan skor yang persis sama dengan tampilan "ular kamu mati",
+    // bukan skor papan yang baru diperbarui tiap setengah detik, supaya urutannya selalu mengikuti
+    // langkah yang sedang berjalan.
+    const getLiveRow = (row: SlitherBoardRow) => (row.playerId === identityId ? { ...row, score: filters.score } : row)
     const leaderboard = [...board]
+      .map(getLiveRow)
       .sort((left, right) => right.score - left.score)
       .slice(0, 6)
       .map((row) => ({ ...row, isSelf: row.playerId === identityId }))
@@ -73,11 +80,9 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
       isArena: filters.phase === 'arena' && isReady,
       isJoinDisabled: filters.roomCode.trim().length < 3,
       botCount: filters.mode === 'solo' ? SOLO_BOTS : ONLINE_BOTS,
-      playersOnline: players.filter((player) => player.alive).length + 1,
-      isSolo: !isConnected,
       leaderboard,
     }
-  }, [guest, filters, slitherArena, board, payloadGetSlitherArena.code])
+  }, [guest, filters, slitherArena, board])
 
   const editSlitherName = (value: string) => {
     setFilters((prev) => ({ ...prev, nameDraft: value.slice(0, 14) }))
@@ -124,6 +129,14 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
   const submitSlitherRespawn = () => {
     setFilters((prev) => ({ ...prev, isDead: false, score: 0, respawnNonce: prev.respawnNonce + 1 }))
   }
+  const editSlitherFullscreen = () => {
+    const getFullscreenElement = () => document.fullscreenElement
+    if (getFullscreenElement()) {
+      document.exitFullscreen?.().catch(() => {})
+    } else {
+      stageRef.current?.requestFullscreen?.().catch(() => {})
+    }
+  }
   const loadSlitherExit = () => {
     setFilters((prev) => ({ ...prev, isExitOpen: true }))
   }
@@ -146,6 +159,18 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
       coarse.removeEventListener('change', loadDevice)
       portrait.removeEventListener('change', loadDevice)
     }
+  }, [])
+  useEffect(() => {
+    // Layar penuh bisa ditutup dari luar tombol ini, misalnya tombol Esc peramban, jadi keadaan
+    // tombol disamakan dengan keadaan sebenarnya lewat peristiwa ini, bukan ditebak dari klik saja.
+    const loadFullscreenChange = () => {
+      setFilters((prev) => {
+        const next = !!document.fullscreenElement
+        return prev.isFullscreen === next ? prev : { ...prev, isFullscreen: next }
+      })
+    }
+    document.addEventListener('fullscreenchange', loadFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', loadFullscreenChange)
   }, [])
   useEffect(() => {
     // Sebagian peramban mengizinkan penguncian orientasi; kalau ditolak, lapisan "putar layar"
@@ -190,7 +215,7 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
   }
 
   return (
-    <div className="relative h-[100dvh] w-full touch-none overflow-hidden bg-[#0a0a0b]">
+    <div ref={stageRef} className="relative h-[100dvh] w-full touch-none overflow-hidden bg-[#0a0a0b]">
       <SlitherArena
         isActive
         selfId={data.identityId}
@@ -209,13 +234,12 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
 
       <SlitherHud
         score={filters.score}
-        roomCode={data.isSolo ? 'vs Komputer' : filters.roomCode}
-        playersOnline={data.playersOnline}
-        isSolo={data.isSolo}
         isDead={filters.isDead}
+        isFullscreen={filters.isFullscreen}
         leaderboard={data.leaderboard}
         onSubmitSlitherRespawn={submitSlitherRespawn}
         onLoadSlitherExit={loadSlitherExit}
+        onEditSlitherFullscreen={editSlitherFullscreen}
       />
 
       {device.isTouch ? <SlitherTouch controlRef={controlRef} /> : null}
