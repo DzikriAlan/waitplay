@@ -39,7 +39,7 @@ export default function SlitherPreview({ skinIndex }: Props) {
   }, [skinIndex])
 
   return (
-    <div className="mt-4 flex items-center justify-center rounded-2xl border border-[#26262b] bg-[#0a0a0b] py-2">
+    <div className="mt-2 shrink-0 flex items-center justify-center rounded-2xl border border-[#26262b] bg-[#0a0a0b] py-1.5">
       <svg
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
         className="h-[78px] w-full"
