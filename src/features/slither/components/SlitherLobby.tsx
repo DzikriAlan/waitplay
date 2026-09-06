@@ -32,8 +32,8 @@ export default function SlitherLobby({
   onSubmitSlitherJoin,
 }: Props) {
   return (
-    <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden overscroll-none bg-[#0a0a0b] px-3 py-3 text-[#f2ede1] sm:px-4">
-      <div className="flex max-h-full w-full max-w-[380px] shrink-0 flex-col overflow-hidden rounded-2xl border border-[#26262b] bg-[#121214] p-3 sm:p-4">
+    <div className="flex min-h-[100dvh] w-full justify-center overflow-x-hidden overflow-y-auto overscroll-none bg-[#0a0a0b] px-3 py-3 text-[#f2ede1] sm:px-4">
+      <div className="my-auto flex w-full max-w-[380px] shrink-0 flex-col rounded-2xl border border-[#26262b] bg-[#121214] p-3 sm:p-4">
         <Link href="/" className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#a29d93]">
           &larr; Waitplay
         </Link>
