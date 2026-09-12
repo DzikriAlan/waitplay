@@ -5,6 +5,7 @@ interface UnoStore {
   unoGame: UnoGame
   setUnoInit: () => void
   setUnoPlayCard: (cardId: string) => void
+  setUnoPlayCards: (cardIds: string[]) => void
   setUnoPickColor: (color: UnoColor) => void
   setUnoDrawCard: () => void
   setUnoPass: () => void
@@ -72,6 +73,9 @@ export const useUnoStates = create<UnoStore>((set, get) => {
     return !!topCard && topCard.value === card.value
   }
 
+  // Hanya kartu angka polos (bukan aksi maupun wild) yang boleh dibuang berpasangan dalam satu giliran.
+  const getIsPlainNumber = (value: UnoValue) => ![...ACTIONS, 'wild', 'wild4'].includes(value)
+
   const getRefilledPiles = (drawPile: UnoCard[], discardPile: UnoCard[]) => {
     if (drawPile.length) return { drawPile, discardPile }
     const top = discardPile[discardPile.length - 1]
@@ -136,24 +140,36 @@ export const useUnoStates = create<UnoStore>((set, get) => {
       direction: 1,
       pendingWildCardId: null,
       hasDrawnThisTurn: false,
+      pendingDrawTotal: 0,
       winnerId: null,
       lastAction: 'Game started. Your turn!',
     }
     return data
   }
 
-  const getAppliedPlay = (data: DataUnoGame, playerIndex: number, card: UnoCard, chosenColor: UnoColor | null) => {
+  const getAppliedPlay = (data: DataUnoGame, playerIndex: number, cards: UnoCard[], chosenColor: UnoColor | null) => {
     const players = data.players.map((player) => ({ ...player, hand: [...player.hand] }))
     const actor = players[playerIndex]
     const total = players.length
 
-    actor.hand = actor.hand.filter((item) => item.id !== card.id)
-    const discardPile = [...data.discardPile, { ...card, color: chosenColor ?? card.color }]
+    // Kartu angka sama boleh dibuang bersamaan dalam satu giliran; hanya kartu terakhir yang
+    // menentukan warna aktif berikutnya.
+    const card = cards[cards.length - 1]
+    const cardIds = new Set(cards.map((item) => item.id))
+    actor.hand = actor.hand.filter((item) => !cardIds.has(item.id))
+    const discardPile = [
+      ...data.discardPile,
+      ...cards.map((item, cardIndex) => ({
+        ...item,
+        color: cardIndex === cards.length - 1 ? (chosenColor ?? item.color) : item.color,
+      })),
+    ]
     let drawPile = data.drawPile
     let workingDiscard = discardPile
     let direction = data.direction
     let step = 1
-    let lastAction = `${actor.name} played ${card.value}`
+    let lastAction =
+      cards.length > 1 ? `${actor.name} played ${cards.length} cards of ${card.value}` : `${actor.name} played ${card.value}`
 
     if (card.value === 'reverse') {
       direction = total > 2 ? -direction : direction
@@ -164,16 +180,14 @@ export const useUnoStates = create<UnoStore>((set, get) => {
       step = 2
       lastAction = `${actor.name} skipped the next player`
     }
+    // Kartu +2 dan +4 saling bisa ditimpa: tarikannya ditunda dan ditumpuk, giliran jatuh ke korban
+    // supaya dia boleh menimpa dengan +2/+4 miliknya sendiri sebelum akhirnya menarik semuanya.
+    let pendingDrawTotal = data.pendingDrawTotal
     if (card.value === 'draw2' || card.value === 'wild4') {
-      const victimIndex = getNextPlayer(playerIndex, direction, total, 1)
-      const total4 = card.value === 'wild4' ? 4 : 2
-      const result = getDrawnCards(drawPile, workingDiscard, total4)
-      drawPile = result.drawPile
-      workingDiscard = result.discardPile
-      players[victimIndex].hand = [...players[victimIndex].hand, ...result.drawn]
-      players[victimIndex].hasCalledUno = false
-      step = 2
-      lastAction = `${players[victimIndex].name} draws ${total4} cards`
+      const addedDraw = card.value === 'wild4' ? 4 : 2
+      pendingDrawTotal += addedDraw
+      step = 1
+      lastAction = `${actor.name} stacks +${addedDraw}, ${pendingDrawTotal} to draw`
     }
 
     if (actor.hand.length === 1 && !actor.hasCalledUno) {
@@ -198,6 +212,7 @@ export const useUnoStates = create<UnoStore>((set, get) => {
       currentPlayer: winnerId === null ? getNextPlayer(playerIndex, direction, total, step) : playerIndex,
       pendingWildCardId: null,
       hasDrawnThisTurn: false,
+      pendingDrawTotal: winnerId === null ? pendingDrawTotal : 0,
       winnerId,
       lastAction: winnerId === null ? lastAction : `${actor.name} wins!`,
     }
@@ -261,8 +276,22 @@ export const useUnoStates = create<UnoStore>((set, get) => {
 
       const player = data.players[0]
       const card = player.hand.find((item) => item.id === cardId)
-      const topCard = data.discardPile[data.discardPile.length - 1]
       if (!card) return
+
+      if (data.pendingDrawTotal > 0) {
+        if (card.value !== 'draw2' && card.value !== 'wild4') {
+          getRejected('You must play a +2/+4 or draw the stack first')
+          return
+        }
+        if (card.value === 'wild4') {
+          set((state) => ({ unoGame: { ...state.unoGame, data: { ...data, pendingWildCardId: card.id } } }))
+          return
+        }
+        set((state) => ({ unoGame: { ...state.unoGame, data: getAppliedPlay(data, 0, [card], null) } }))
+        return
+      }
+
+      const topCard = data.discardPile[data.discardPile.length - 1]
       if (!getIsPlayable(card, data.activeColor, topCard)) {
         getRejected('That card does not match the color or number')
         return
@@ -273,7 +302,44 @@ export const useUnoStates = create<UnoStore>((set, get) => {
         return
       }
 
-      set((state) => ({ unoGame: { ...state.unoGame, data: getAppliedPlay(data, 0, card, null) } }))
+      set((state) => ({ unoGame: { ...state.unoGame, data: getAppliedPlay(data, 0, [card], null) } }))
+    },
+
+    setUnoPlayCards: (cardIds) => {
+      const data = get().unoGame.data
+      if (!data || data.winnerId !== null || data.pendingWildCardId) return
+
+      const getRejected = (message: string) =>
+        set((state) => ({ unoGame: { ...state.unoGame, data: { ...data, lastAction: message } } }))
+
+      if (data.currentPlayer !== 0) {
+        getRejected('Wait for your turn')
+        return
+      }
+
+      if (data.pendingDrawTotal > 0) {
+        getRejected('You must play a +2/+4 or draw the stack first')
+        return
+      }
+
+      const player = data.players[0]
+      const uniqueIds = Array.from(new Set(cardIds))
+      const cards = uniqueIds
+        .map((id) => player.hand.find((item) => item.id === id))
+        .filter((item): item is UnoCard => !!item)
+      if (cards.length < 2 || cards.length !== uniqueIds.length) return
+
+      const topCard = data.discardPile[data.discardPile.length - 1]
+      if (!getIsPlayable(cards[0], data.activeColor, topCard)) {
+        getRejected('That card does not match the color or number')
+        return
+      }
+      if (!cards.every((item) => getIsPlainNumber(item.value) && item.value === cards[0].value)) {
+        getRejected('Cards must share the same number')
+        return
+      }
+
+      set((state) => ({ unoGame: { ...state.unoGame, data: getAppliedPlay(data, 0, cards, null) } }))
     },
 
     setUnoPickColor: (color) => {
@@ -281,12 +347,42 @@ export const useUnoStates = create<UnoStore>((set, get) => {
       if (!data || !data.pendingWildCardId) return
       const card = data.players[0].hand.find((item) => item.id === data.pendingWildCardId)
       if (!card) return
-      set((state) => ({ unoGame: { ...state.unoGame, data: getAppliedPlay(data, 0, card, color) } }))
+      set((state) => ({ unoGame: { ...state.unoGame, data: getAppliedPlay(data, 0, [card], color) } }))
     },
 
     setUnoDrawCard: () => {
       const data = get().unoGame.data
-      if (!data || data.winnerId !== null || data.currentPlayer !== 0 || data.hasDrawnThisTurn) return
+      if (!data || data.winnerId !== null || data.currentPlayer !== 0) return
+
+      if (data.pendingDrawTotal > 0) {
+        const player = data.players[0]
+        const hasCounter = player.hand.some((item) => item.value === 'draw2' || item.value === 'wild4')
+        if (hasCounter) return
+
+        const result = getDrawnCards(data.drawPile, data.discardPile, data.pendingDrawTotal)
+        const players = data.players.map((item) => ({ ...item, hand: [...item.hand] }))
+        players[0].hand = [...players[0].hand, ...result.drawn]
+        players[0].hasCalledUno = false
+
+        set((state) => ({
+          unoGame: {
+            ...state.unoGame,
+            data: {
+              ...data,
+              players,
+              drawPile: result.drawPile,
+              discardPile: result.discardPile,
+              hasDrawnThisTurn: false,
+              pendingDrawTotal: 0,
+              currentPlayer: getNextPlayer(0, data.direction, players.length, 1),
+              lastAction: `You drew ${data.pendingDrawTotal} stacked cards`,
+            },
+          },
+        }))
+        return
+      }
+
+      if (data.hasDrawnThisTurn) return
 
       const result = getDrawnCards(data.drawPile, data.discardPile, 1)
       const players = data.players.map((player) => ({ ...player, hand: [...player.hand] }))
@@ -344,6 +440,41 @@ export const useUnoStates = create<UnoStore>((set, get) => {
 
       const index = data.currentPlayer
       const player = data.players[index]
+
+      if (data.pendingDrawTotal > 0) {
+        const getColorScore = (color: UnoColor) => player.hand.filter((item) => item.color === color).length
+        const counter = player.hand.find((item) => item.value === 'draw2' || item.value === 'wild4')
+
+        if (counter) {
+          const chosenColor = counter.value === 'wild4' ? [...COLORS].sort((left, right) => getColorScore(right) - getColorScore(left))[0] : null
+          set((state) => ({
+            unoGame: { ...state.unoGame, data: getAppliedPlay(data, index, [counter], chosenColor) },
+          }))
+          return
+        }
+
+        const result = getDrawnCards(data.drawPile, data.discardPile, data.pendingDrawTotal)
+        const players = data.players.map((item) => ({ ...item, hand: [...item.hand] }))
+        players[index].hand = [...players[index].hand, ...result.drawn]
+        players[index].hasCalledUno = false
+        set((state) => ({
+          unoGame: {
+            ...state.unoGame,
+            data: {
+              ...data,
+              players,
+              drawPile: result.drawPile,
+              discardPile: result.discardPile,
+              hasDrawnThisTurn: false,
+              pendingDrawTotal: 0,
+              currentPlayer: getNextPlayer(index, data.direction, players.length, 1),
+              lastAction: `${player.name} draws ${data.pendingDrawTotal} stacked cards`,
+            },
+          },
+        }))
+        return
+      }
+
       const choice = getBotChoice(data, player)
 
       if (choice) {
@@ -351,7 +482,7 @@ export const useUnoStates = create<UnoStore>((set, get) => {
         players[index].hasCalledUno = players[index].hand.length === 2
         const withCall = { ...data, players }
         set((state) => ({
-          unoGame: { ...state.unoGame, data: getAppliedPlay(withCall, index, choice.card, choice.chosenColor) },
+          unoGame: { ...state.unoGame, data: getAppliedPlay(withCall, index, [choice.card], choice.chosenColor) },
         }))
         return
       }
@@ -374,7 +505,7 @@ export const useUnoStates = create<UnoStore>((set, get) => {
               )[0]
             : null
         set((state) => ({
-          unoGame: { ...state.unoGame, data: getAppliedPlay(drawnData, index, drawn, chosenColor) },
+          unoGame: { ...state.unoGame, data: getAppliedPlay(drawnData, index, [drawn], chosenColor) },
         }))
         return
       }

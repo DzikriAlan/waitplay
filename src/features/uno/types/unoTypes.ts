@@ -41,6 +41,8 @@ export interface DataUnoGame {
   direction: number
   pendingWildCardId: string | null
   hasDrawnThisTurn: boolean
+  // Total kartu yang wajib ditarik dari tumpukan +2/+4 yang belum ditimpa; 0 berarti tidak ada tumpukan aktif.
+  pendingDrawTotal: number
   winnerId: number | null
   lastAction: string
 }
