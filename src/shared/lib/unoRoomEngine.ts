@@ -14,12 +14,15 @@ export type UnoRoomState = {
   currentSeat: string
   direction: number
   hasDrawnThisTurn: boolean
+  // Total kartu yang wajib ditarik dari tumpukan +2/+4 yang belum ditimpa; 0 berarti tidak ada tumpukan aktif.
+  pendingDrawTotal: number
   lastAction: string
 }
 
 export type UnoRoomMove = {
   action: string
   cardId?: string
+  cardIds?: string[]
   color?: string
 }
 
@@ -78,6 +81,10 @@ export const getUnoRoomIsPlayable = (card: UnoCard, activeColor: UnoColor, topCa
   if (card.color === activeColor) return true
   return !!topCard && topCard.value === card.value
 }
+
+// Hanya kartu angka polos (bukan aksi maupun wild) yang boleh dibuang berpasangan dalam satu giliran.
+const NON_NUMBER_VALUES = new Set<UnoValue>(['skip', 'reverse', 'draw2', 'wild', 'wild4'])
+export const getUnoRoomIsPlainNumber = (value: UnoValue) => !NON_NUMBER_VALUES.has(value)
 
 const getRefilledPiles = (drawPile: UnoCard[], discardPile: UnoCard[]) => {
   if (drawPile.length) return { drawPile, discardPile }
@@ -138,22 +145,33 @@ export const getUnoRoomNewState = (seats: string[]): UnoRoomState => {
     currentSeat: seats[0] ?? 'p1',
     direction: 1,
     hasDrawnThisTurn: false,
+    pendingDrawTotal: 0,
     lastAction: 'Permainan dimulai',
   }
 }
 
-const getAppliedPlay = (state: UnoRoomState, seat: string, card: UnoCard, chosenColor: UnoColor | null) => {
+const getAppliedPlay = (state: UnoRoomState, seat: string, cards: UnoCard[], chosenColor: UnoColor | null) => {
   const players = state.players.map((player) => ({ ...player, hand: [...player.hand] }))
   const index = players.findIndex((player) => player.seat === seat)
   const actor = players[index]
-  const working = { ...state, players }
 
-  actor.hand = actor.hand.filter((item) => item.id !== card.id)
+  // Kartu angka sama boleh dibuang bersamaan dalam satu giliran; hanya kartu terakhir yang
+  // menentukan warna aktif berikutnya.
+  const card = cards[cards.length - 1]
+  const cardIds = new Set(cards.map((item) => item.id))
+  actor.hand = actor.hand.filter((item) => !cardIds.has(item.id))
   let drawPile = state.drawPile
-  let discardPile = [...state.discardPile, { ...card, color: chosenColor ?? card.color }]
+  let discardPile = [
+    ...state.discardPile,
+    ...cards.map((item, cardIndex) => ({
+      ...item,
+      color: cardIndex === cards.length - 1 ? (chosenColor ?? item.color) : item.color,
+    })),
+  ]
   let direction = state.direction
   let step = 1
-  let lastAction = `${seat} membuang ${card.value}`
+  let lastAction =
+    cards.length > 1 ? `${seat} membuang ${cards.length} kartu angka ${card.value}` : `${seat} membuang ${card.value}`
 
   if (card.value === 'reverse') {
     direction = players.length > 2 ? -direction : direction
@@ -164,17 +182,14 @@ const getAppliedPlay = (state: UnoRoomState, seat: string, card: UnoCard, chosen
     step = 2
     lastAction = `${seat} melewati pemain berikutnya`
   }
+  // Kartu +2 dan +4 saling bisa ditimpa: tarikannya ditunda dan ditumpuk, giliran jatuh ke korban
+  // supaya dia boleh menimpa dengan +2/+4 miliknya sendiri sebelum akhirnya menarik semuanya.
+  let pendingDrawTotal = state.pendingDrawTotal
   if (card.value === 'draw2' || card.value === 'wild4') {
-    const victimSeat = getNextSeat({ ...working, direction }, seat, 1)
-    const victimIndex = players.findIndex((player) => player.seat === victimSeat)
-    const drawTotal = card.value === 'wild4' ? 4 : 2
-    const result = getDrawnCards(drawPile, discardPile, drawTotal)
-    drawPile = result.drawPile
-    discardPile = result.discardPile
-    players[victimIndex].hand = [...players[victimIndex].hand, ...result.drawn]
-    players[victimIndex].hasCalledUno = false
-    step = 2
-    lastAction = `${victimSeat} menarik ${drawTotal} kartu`
+    const addedDraw = card.value === 'wild4' ? 4 : 2
+    pendingDrawTotal += addedDraw
+    step = 1
+    lastAction = `${seat} menumpuk +${addedDraw}, total tarik ${pendingDrawTotal}`
   }
 
   // Lupa meneriakkan UNO membuat pemain menarik dua kartu tambahan.
@@ -196,6 +211,7 @@ const getAppliedPlay = (state: UnoRoomState, seat: string, card: UnoCard, chosen
     activeColor: chosenColor ?? card.color ?? state.activeColor,
     direction,
     hasDrawnThisTurn: false,
+    pendingDrawTotal: winner ? 0 : pendingDrawTotal,
     currentSeat: seat,
     lastAction: winner ? `${seat} menang!` : lastAction,
   }
@@ -232,15 +248,46 @@ export const getUnoRoomAppliedMove = (
   if (state.currentSeat !== seat) return null
 
   if (move.action === 'play') {
-    const card = player.hand.find((item) => item.id === move.cardId)
-    const topCard = state.discardPile[state.discardPile.length - 1]
-    if (!card || !getUnoRoomIsPlayable(card, state.activeColor, topCard)) return null
+    const ids = move.cardIds?.length ? move.cardIds : move.cardId ? [move.cardId] : []
+    const uniqueIds = Array.from(new Set(ids))
+    if (!uniqueIds.length || uniqueIds.length !== ids.length) return null
 
-    const isWild = card.value === 'wild' || card.value === 'wild4'
+    const cards = uniqueIds
+      .map((id) => player.hand.find((item) => item.id === id))
+      .filter((item): item is UnoCard => !!item)
+    if (cards.length !== uniqueIds.length) return null
+
+    // Selama tumpukan +2/+4 aktif, hanya kartu +2/+4 tunggal yang boleh dibuang untuk menimpanya;
+    // kecocokan warna atau angka dengan kartu teratas tidak berlaku di sini.
+    if (state.pendingDrawTotal > 0) {
+      if (cards.length !== 1 || (cards[0].value !== 'draw2' && cards[0].value !== 'wild4')) return null
+      const isWild4 = cards[0].value === 'wild4'
+      const chosenColor = COLORS.includes(move.color as UnoColor) ? (move.color as UnoColor) : null
+      if (isWild4 && !chosenColor) return null
+
+      const applied = getAppliedPlay(state, seat, cards, isWild4 ? chosenColor : null)
+      return {
+        state: applied.state,
+        turn: applied.state.currentSeat,
+        moveTotal: moveTotal + 1,
+        isFinished: !!applied.winner,
+        winner: applied.winner,
+      }
+    }
+
+    const topCard = state.discardPile[state.discardPile.length - 1]
+    if (!getUnoRoomIsPlayable(cards[0], state.activeColor, topCard)) return null
+
+    // Hanya kartu angka polos yang boleh dibuang bersamaan, dan seluruhnya wajib angka yang sama.
+    if (cards.length > 1 && !cards.every((item) => getUnoRoomIsPlainNumber(item.value) && item.value === cards[0].value)) {
+      return null
+    }
+
+    const isWild = cards.length === 1 && (cards[0].value === 'wild' || cards[0].value === 'wild4')
     const chosenColor = COLORS.includes(move.color as UnoColor) ? (move.color as UnoColor) : null
     if (isWild && !chosenColor) return null
 
-    const applied = getAppliedPlay(state, seat, card, isWild ? chosenColor : null)
+    const applied = getAppliedPlay(state, seat, cards, isWild ? chosenColor : null)
     return {
       state: applied.state,
       turn: applied.state.currentSeat,
@@ -251,6 +298,32 @@ export const getUnoRoomAppliedMove = (
   }
 
   if (move.action === 'draw') {
+    // Tumpukan +2/+4 aktif hanya bisa diterima kalau tangan pemain benar-benar tidak punya
+    // kartu penimpa; kalau punya, dia wajib memakainya lewat action "play".
+    if (state.pendingDrawTotal > 0) {
+      const hasCounter = player.hand.some((item) => item.value === 'draw2' || item.value === 'wild4')
+      if (hasCounter) return null
+
+      const result = getDrawnCards(state.drawPile, state.discardPile, state.pendingDrawTotal)
+      const players = state.players.map((item) =>
+        item.seat === seat
+          ? { ...item, hand: [...item.hand, ...result.drawn], hasCalledUno: false }
+          : { ...item, hand: [...item.hand] },
+      )
+      const nextState: UnoRoomState = {
+        ...state,
+        players,
+        drawPile: result.drawPile,
+        discardPile: result.discardPile,
+        hasDrawnThisTurn: false,
+        pendingDrawTotal: 0,
+        currentSeat: seat,
+        lastAction: `${seat} menarik ${state.pendingDrawTotal} kartu tumpukan`,
+      }
+      nextState.currentSeat = getNextSeat(nextState, seat, 1)
+      return { state: nextState, turn: nextState.currentSeat, moveTotal: moveTotal + 1, isFinished: false, winner: '' }
+    }
+
     if (state.hasDrawnThisTurn) return null
     const result = getDrawnCards(state.drawPile, state.discardPile, 1)
     const players = state.players.map((item) =>
@@ -302,6 +375,7 @@ export const getUnoRoomView = (state: UnoRoomState, seat: string | null) => {
     drawTotal: state.drawPile.length,
     discardTotal: state.discardPile.length,
     hasDrawnThisTurn: state.hasDrawnThisTurn,
+    pendingDrawTotal: state.pendingDrawTotal,
     lastAction: state.lastAction,
   }
 }

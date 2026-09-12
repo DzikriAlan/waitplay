@@ -55,6 +55,7 @@ export type GameRoomMovePayload = {
   promotion?: string
   action?: string
   cardId?: string
+  cardIds?: string[]
   color?: string
   lineIndex?: number
   cellIndex?: number
@@ -215,7 +216,7 @@ const getUnoAppliedMove = (room: GameRoomRecord, seat: GameRoomSeat, payload: Ga
   const resolved = getUnoRoomAppliedMove(
     state,
     seat,
-    { action: String(payload.action ?? ''), cardId: payload.cardId, color: payload.color },
+    { action: String(payload.action ?? ''), cardId: payload.cardId, cardIds: payload.cardIds, color: payload.color },
     room.moveTotal,
   )
   if (!resolved) return null

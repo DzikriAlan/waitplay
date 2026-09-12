@@ -15,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const promotion = String(req.body?.promotion ?? '')
   const action = String(req.body?.action ?? '')
   const cardId = String(req.body?.cardId ?? '')
+  const cardIds = Array.isArray(req.body?.cardIds) ? req.body.cardIds.map(String).filter(Boolean) : undefined
   const color = String(req.body?.color ?? '')
   const lineIndex = Number(req.body?.lineIndex)
   const cellIndex = Number(req.body?.cellIndex)
@@ -37,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       promotion: promotion || undefined,
       action: action || undefined,
       cardId: cardId || undefined,
+      cardIds,
       color: color || undefined,
       lineIndex,
       cellIndex,

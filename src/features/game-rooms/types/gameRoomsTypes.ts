@@ -39,6 +39,7 @@ export interface PayloadPostGameRoomsMove {
   promotion?: string
   action?: string
   cardId?: string
+  cardIds?: string[]
   color?: string
   lineIndex?: number
   cellIndex?: number
@@ -53,6 +54,7 @@ export interface DataGameRoomsUno {
   drawTotal: number
   discardTotal: number
   hasDrawnThisTurn: boolean
+  pendingDrawTotal: number
   lastAction: string
 }
 

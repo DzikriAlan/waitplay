@@ -124,6 +124,7 @@ export const postGameRoomsMove = async (payload: PayloadPostGameRoomsMove) => {
         promotion: payload.promotion,
         action: payload.action,
         cardId: payload.cardId,
+        cardIds: payload.cardIds,
         color: payload.color,
         lineIndex: payload.lineIndex,
         cellIndex: payload.cellIndex,
