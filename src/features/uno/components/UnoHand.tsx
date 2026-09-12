@@ -84,8 +84,8 @@ export default function UnoHand({
       {isSelectMode ? (
         <p className="pb-1 text-center text-[9px] font-semibold uppercase tracking-[0.2em] text-[#f0b429]">
           {selectedCardIds.length
-            ? `${selectedCardIds.length} kartu angka ${selectedValue} dipilih`
-            : 'Ketuk kartu angka yang ingin dipasangkan'}
+            ? `${selectedCardIds.length} kartu ${selectedValue} dipilih`
+            : 'Ketuk kartu angka atau skip yang ingin dipasangkan'}
         </p>
       ) : null}
 

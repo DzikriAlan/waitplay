@@ -82,9 +82,10 @@ export const getUnoRoomIsPlayable = (card: UnoCard, activeColor: UnoColor, topCa
   return !!topCard && topCard.value === card.value
 }
 
-// Hanya kartu angka polos (bukan aksi maupun wild) yang boleh dibuang berpasangan dalam satu giliran.
-const NON_NUMBER_VALUES = new Set<UnoValue>(['skip', 'reverse', 'draw2', 'wild', 'wild4'])
-export const getUnoRoomIsPlainNumber = (value: UnoValue) => !NON_NUMBER_VALUES.has(value)
+// Kartu angka polos dan skip boleh dibuang berpasangan dalam satu giliran; reverse, draw2, dan wild
+// tidak, karena draw2/wild4 sudah punya aturan tumpukan sendiri.
+const NON_MULTI_VALUES = new Set<UnoValue>(['reverse', 'draw2', 'wild', 'wild4'])
+export const getUnoRoomIsMultiPlayable = (value: UnoValue) => !NON_MULTI_VALUES.has(value)
 
 const getRefilledPiles = (drawPile: UnoCard[], discardPile: UnoCard[]) => {
   if (drawPile.length) return { drawPile, discardPile }
@@ -179,8 +180,10 @@ const getAppliedPlay = (state: UnoRoomState, seat: string, cards: UnoCard[], cho
     lastAction = `${seat} membalik arah`
   }
   if (card.value === 'skip') {
-    step = 2
-    lastAction = `${seat} melewati pemain berikutnya`
+    // Beberapa kartu skip yang ditumpuk melewati pemain sebanyak jumlah kartunya.
+    step = cards.length + 1
+    lastAction =
+      cards.length > 1 ? `${seat} melewati ${cards.length} pemain berikutnya` : `${seat} melewati pemain berikutnya`
   }
   // Kartu +2 dan +4 saling bisa ditimpa: tarikannya ditunda dan ditumpuk, giliran jatuh ke korban
   // supaya dia boleh menimpa dengan +2/+4 miliknya sendiri sebelum akhirnya menarik semuanya.
@@ -278,8 +281,8 @@ export const getUnoRoomAppliedMove = (
     const topCard = state.discardPile[state.discardPile.length - 1]
     if (!getUnoRoomIsPlayable(cards[0], state.activeColor, topCard)) return null
 
-    // Hanya kartu angka polos yang boleh dibuang bersamaan, dan seluruhnya wajib angka yang sama.
-    if (cards.length > 1 && !cards.every((item) => getUnoRoomIsPlainNumber(item.value) && item.value === cards[0].value)) {
+    // Hanya kartu angka polos atau skip yang boleh dibuang bersamaan, dan seluruhnya wajib nilai yang sama.
+    if (cards.length > 1 && !cards.every((item) => getUnoRoomIsMultiPlayable(item.value) && item.value === cards[0].value)) {
       return null
     }
 

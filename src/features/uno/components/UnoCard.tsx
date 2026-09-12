@@ -2,7 +2,8 @@
 
 import type { UnoCard as UnoCardType } from '../types/unoTypes'
 
-const NON_NUMBER_VALUES = new Set(['skip', 'reverse', 'draw2', 'wild', 'wild4'])
+// Kartu angka polos dan skip boleh dipasangkan; reverse, draw2, dan wild tidak.
+const NON_MULTI_VALUES = new Set(['reverse', 'draw2', 'wild', 'wild4'])
 
 interface Props {
   card: UnoCardType | null
@@ -104,9 +105,9 @@ export default function UnoCard({
 
   if (!onSubmitUnoCard) return face
 
-  // Kartu angka polos boleh jadi pilihan pertama; setelah ada pilihan, hanya angka yang sama yang ikut bisa dipilih.
-  const isNumberCard = !NON_NUMBER_VALUES.has(card.value)
-  const isSelectable = isNumberCard && (!selectedValue || card.value === selectedValue)
+  // Kartu angka polos atau skip boleh jadi pilihan pertama; setelah ada pilihan, hanya nilai yang sama yang ikut bisa dipilih.
+  const isMultiPlayableCard = !NON_MULTI_VALUES.has(card.value)
+  const isSelectable = isMultiPlayableCard && (!selectedValue || card.value === selectedValue)
   const isDimmed = isSelectMode && !isSelected && !isSelectable
 
   const submitUnoTap = () => {

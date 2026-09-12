@@ -109,7 +109,7 @@
             "Action cards change the flow: Skip jumps over the next player, Reverse flips the direction, and Draw Two makes the next player pick up two cards.",
             "A Wild card can be played anytime and you choose the next colour; Wild Draw Four also hands the next player four cards.",
             "If nothing matches, draw one card from the pile. Play it right away if it fits, otherwise your turn passes.",
-            "Tap \"Select pair\", then tap two number cards that share the same number (colours can differ) and hit \"Discard\" to drop both in one turn.",
+            "Tap \"Select pair\", then tap two number or Skip cards that share the same value (colours can differ) and hit \"Discard\" to drop both in one turn. Stacked Skips skip as many players as the number of cards.",
             "Hit by a Draw Two or Wild Draw Four? If you hold a +2 or +4 yourself you must stack it so the pile grows and passes to the next player; if you don't, you have to draw the whole pile."
           ],
           "win": [

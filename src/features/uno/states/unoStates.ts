@@ -73,8 +73,9 @@ export const useUnoStates = create<UnoStore>((set, get) => {
     return !!topCard && topCard.value === card.value
   }
 
-  // Hanya kartu angka polos (bukan aksi maupun wild) yang boleh dibuang berpasangan dalam satu giliran.
-  const getIsPlainNumber = (value: UnoValue) => ![...ACTIONS, 'wild', 'wild4'].includes(value)
+  // Kartu angka polos dan skip boleh dibuang berpasangan dalam satu giliran; reverse, draw2, dan wild
+  // tidak, karena draw2/wild4 sudah punya aturan tumpukan sendiri.
+  const getIsMultiPlayable = (value: UnoValue) => !['reverse', 'draw2', 'wild', 'wild4'].includes(value)
 
   const getRefilledPiles = (drawPile: UnoCard[], discardPile: UnoCard[]) => {
     if (drawPile.length) return { drawPile, discardPile }
@@ -177,8 +178,10 @@ export const useUnoStates = create<UnoStore>((set, get) => {
       lastAction = `${actor.name} reversed the direction`
     }
     if (card.value === 'skip') {
-      step = 2
-      lastAction = `${actor.name} skipped the next player`
+      // Beberapa kartu skip yang ditumpuk melewati pemain sebanyak jumlah kartunya.
+      step = cards.length + 1
+      lastAction =
+        cards.length > 1 ? `${actor.name} skipped ${cards.length} players` : `${actor.name} skipped the next player`
     }
     // Kartu +2 dan +4 saling bisa ditimpa: tarikannya ditunda dan ditumpuk, giliran jatuh ke korban
     // supaya dia boleh menimpa dengan +2/+4 miliknya sendiri sebelum akhirnya menarik semuanya.
@@ -334,7 +337,7 @@ export const useUnoStates = create<UnoStore>((set, get) => {
         getRejected('That card does not match the color or number')
         return
       }
-      if (!cards.every((item) => getIsPlainNumber(item.value) && item.value === cards[0].value)) {
+      if (!cards.every((item) => getIsMultiPlayable(item.value) && item.value === cards[0].value)) {
         getRejected('Cards must share the same number')
         return
       }
