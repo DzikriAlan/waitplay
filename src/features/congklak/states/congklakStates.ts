@@ -99,8 +99,13 @@ export const useCongklakStates = create<CongklakStore>((set) => {
   }
 
   const updateFinishedBoard = (source: number[], side: CongklakSide) => {
-    // Permainan berakhir saat pemain yang mendapat giliran kehabisan biji.
-    if (getSideTotal(source, side)) return false
+    // Permainan berakhir saat pemain yang mendapat giliran kehabisan biji, atau lebih awal begitu
+    // sisa biji di seluruh bidak sudah tidak cukup untuk mengejar selisih skor yang ada — pemenangnya
+    // sudah pasti berapa pun jalannya sisa permainan, jadi tidak perlu dituntaskan sampai bidak kosong.
+    const remainingSeeds = getSideTotal(source, 'player') + getSideTotal(source, 'bot')
+    const isAlreadyDecided =
+      source[PLAYER_STORE] > source[BOT_STORE] + remainingSeeds || source[BOT_STORE] > source[PLAYER_STORE] + remainingSeeds
+    if (getSideTotal(source, side) && !isAlreadyDecided) return false
     const sides: CongklakSide[] = ['player', 'bot']
     sides.forEach((item) => {
       const start = item === 'player' ? 0 : PLAYER_STORE + 1

@@ -114,8 +114,14 @@ export const getCongklakResolvedMove = (
   }
 
   const turn = isExtraTurn ? seat : getRivalSeat(seat)
-  // Permainan berakhir saat pemain yang mendapat giliran kehabisan biji.
-  const isFinished = !getCongklakSideTotal(next, turn)
+  // Permainan berakhir saat pemain yang mendapat giliran kehabisan biji, atau lebih awal begitu
+  // sisa biji di seluruh bidak sudah tidak cukup untuk mengejar selisih skor yang ada — pemenangnya
+  // sudah pasti berapa pun jalannya sisa permainan, jadi tidak perlu dituntaskan sampai bidak kosong.
+  const remainingSeeds = getCongklakSideTotal(next, 'host') + getCongklakSideTotal(next, 'guest')
+  const isAlreadyDecided =
+    next[CONGKLAK_HOST_STORE] > next[CONGKLAK_GUEST_STORE] + remainingSeeds ||
+    next[CONGKLAK_GUEST_STORE] > next[CONGKLAK_HOST_STORE] + remainingSeeds
+  const isFinished = !getCongklakSideTotal(next, turn) || isAlreadyDecided
   if (isFinished) {
     getSweptBoard(next)
     frames.push([...next])
