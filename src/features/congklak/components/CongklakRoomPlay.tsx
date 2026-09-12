@@ -8,6 +8,7 @@ import { useGameRoomsControllers } from '@/features/game-rooms/controllers/gameR
 import GameRoomsInvite from '@/features/game-rooms/components/GameRoomsInvite'
 import GameTurnStatus from '@/shared/components/reusable/GameTurnStatus'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
+import GameAudio, { type GameAudioCue } from '@/shared/components/reusable/GameAudio'
 import CongklakHeader from './CongklakHeader'
 import CongklakBoard from './CongklakBoard'
 import CongklakResult from './CongklakResult'
@@ -28,6 +29,7 @@ export default function CongklakRoomPlay({ code }: Props) {
   const [filters, setFilters] = useState({
     isExitOpen: false,
     isSoundOn: true,
+    cue: null as GameAudioCue | null,
     displayBoard: [] as number[],
     animatedMove: 0,
     isCopied: false,
@@ -112,6 +114,7 @@ export default function CongklakRoomPlay({ code }: Props) {
       isLeftByRival: !!room?.leftSeat && room.leftSeat !== seat,
       resultLabel: getResultLabel(room?.winner ?? ''),
       isSoundOn: filters.isSoundOn,
+      cue: filters.cue,
     }
   }, [gameRooms, filters, code])
   const submitCongklakHole = (holeIndex: number) => {
@@ -230,11 +233,38 @@ export default function CongklakRoomPlay({ code }: Props) {
       return
     }
   }, [gameRooms.data?.token, code])
+  useEffect(() => {
+    // Setiap langkah dan kemenangan/kekalahan dijadikan penanda bunyi, sama seperti mode solo,
+    // supaya ruangan daring tidak lagi bisu.
+    const room = gameRooms.data
+    if (!room) return
+    const getCue = (kind: GameAudioCue['kind']): GameAudioCue => ({ id: Date.now(), kind })
+    if (room.status === 'finished' && room.winner) {
+      const kind = room.winner === room.seat ? 'win' : 'lose'
+      setFilters((prev) => (prev.cue?.kind === kind ? prev : { ...prev, cue: getCue(kind) }))
+      return
+    }
+    const id = room.moveTotal
+    setFilters((prev) => {
+      if (!id || prev.cue?.id === id) return prev
+      return { ...prev, cue: { id, kind: 'move' } }
+    })
+  }, [gameRooms.data])
 
   return (
     <div className="flex h-[100dvh] w-full touch-none items-stretch justify-center overflow-hidden overscroll-none bg-[#0a0a0b] p-2 sm:p-4">
       <div className="flex h-full w-full max-w-[480px] flex-col gap-3">
         <CongklakHeader onLoadCongklakExit={loadCongklakExit} isSoundOn={data.isSoundOn} onEditCongklakSound={editCongklakSound} />
+
+        <GameAudio
+          isActive
+          isMusicOn={data.isSoundOn}
+          isSoundOn={data.isSoundOn}
+          bassScale={[110, 110, 146.83, 130.81]}
+          leadScale={[440, 523.25, 587.33, 523.25, 440, 392, 440, 523.25]}
+          stepDuration={0.34}
+          cue={data.cue}
+        />
 
         <GameTurnStatus label={data.statusLabel} isWaiting={data.isWaiting} />
 

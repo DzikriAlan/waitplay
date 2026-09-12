@@ -8,6 +8,7 @@ import { useGameRoomsControllers } from '@/features/game-rooms/controllers/gameR
 import GameRoomsInvite from '@/features/game-rooms/components/GameRoomsInvite'
 import GameTurnStatus from '@/shared/components/reusable/GameTurnStatus'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
+import GameAudio, { type GameAudioCue } from '@/shared/components/reusable/GameAudio'
 import ChessRoomHeader from './ChessRoomHeader'
 import ChessBoard from './ChessBoard'
 import { useLocaleStates } from '@/shared/states/localeStates'
@@ -27,6 +28,8 @@ export default function ChessRoomPlay({ code }: Props) {
     isExitOpen: false,
     selected: '',
     isCopied: false,
+    isSoundOn: true,
+    cue: null as GameAudioCue | null,
     inviteUrl: '',
     pagination: { currentPage: 1, perPage: 64, totalItem: 64, totalPage: 1 },
   })
@@ -130,6 +133,8 @@ export default function ChessRoomPlay({ code }: Props) {
       isLeftByRival: !!room?.leftSeat && room.leftSeat !== seat,
       resultLabel: getResultLabel(room?.winner ?? ''),
       selected: filters.selected,
+      isSoundOn: filters.isSoundOn,
+      cue: filters.cue,
     }
   }, [gameRooms, filters, code, storeGameRoomsMove.isPending, text, activeLocale])
   const submitChessSquare = (square: string) => {
@@ -182,6 +187,9 @@ export default function ChessRoomPlay({ code }: Props) {
       }
     }
     loadCopiedInvite()
+  }
+  const editChessSound = () => {
+    setFilters((prev) => ({ ...prev, isSoundOn: !prev.isSoundOn }))
   }
   const clearChessRoom = () => {
     window.location.href = data.isLeftByRival ? '/' : '/chess'
@@ -245,6 +253,21 @@ export default function ChessRoomPlay({ code }: Props) {
       return
     }
   }, [gameRooms.data?.token, code])
+  useEffect(() => {
+    const room = gameRooms.data
+    if (!room) return
+    if (room.status === 'finished' && room.winner) {
+      const kind = room.winner === 'draw' ? null : room.winner === room.seat ? 'win' : 'lose'
+      if (!kind) return
+      setFilters((prev) => (prev.cue?.kind === kind ? prev : { ...prev, cue: { id: Date.now(), kind } }))
+      return
+    }
+    const id = room.moveTotal
+    setFilters((prev) => {
+      if (!id || prev.cue?.id === id) return prev
+      return { ...prev, cue: { id, kind: 'move' } }
+    })
+  }, [gameRooms.data])
 
   return (
     <div className="flex h-[100dvh] w-full items-stretch justify-center overflow-hidden bg-[#0a0a0b] p-3 sm:p-5">
@@ -256,6 +279,19 @@ export default function ChessRoomPlay({ code }: Props) {
           turnLabel={data.turnLabel}
           moveTotal={data.moveTotal}
           code={data.code}
+          isSoundOn={data.isSoundOn}
+          onEditChessSound={editChessSound}
+        />
+
+        <GameAudio
+          isActive
+          isMusicOn={data.isSoundOn}
+          isSoundOn={data.isSoundOn}
+          bassScale={[98, 98, 130.81, 110]}
+          leadScale={[329.63, 392, 493.88, 440, 392, 329.63, 293.66, 392]}
+          stepDuration={0.42}
+          musicLevel={0.08}
+          cue={data.cue}
         />
 
         <GameTurnStatus label={data.statusLabel} isWaiting={data.isWaiting} />

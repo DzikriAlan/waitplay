@@ -13,6 +13,7 @@ import { useGameRoomsControllers } from '@/features/game-rooms/controllers/gameR
 import GameRoomsInvite from '@/features/game-rooms/components/GameRoomsInvite'
 import GameTurnStatus from '@/shared/components/reusable/GameTurnStatus'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
+import GameAudio, { type GameAudioCue } from '@/shared/components/reusable/GameAudio'
 import OthelloHeader from './OthelloHeader'
 import OthelloBoard from './OthelloBoard'
 import OthelloResult from './OthelloResult'
@@ -32,6 +33,8 @@ export default function OthelloRoomPlay({ code }: Props) {
     isGuideOpen: false,
     isExitOpen: false,
     isSoundOn: true,
+    cue: null as GameAudioCue | null,
+    lastOwnScore: 0,
     isCopied: false,
     inviteUrl: '',
     pagination: { currentPage: 1, perPage: 0, totalItem: 0, totalPage: 1 },
@@ -109,6 +112,7 @@ export default function OthelloRoomPlay({ code }: Props) {
       isLeftByRival: !!room?.leftSeat && room.leftSeat !== seat,
       resultLabel: getResultLabel(room?.winner ?? ''),
       isSoundOn: filters.isSoundOn,
+      cue: filters.cue,
     }
   }, [gameRooms, filters, code, text, activeLocale])
   const submitOthelloCell = (cellIndex: number) => {
@@ -192,6 +196,20 @@ export default function OthelloRoomPlay({ code }: Props) {
       return
     }
   }, [gameRooms.data?.token, code])
+  useEffect(() => {
+    // Bunyi balikan hanya dibunyikan saat jumlah bidak pemain bertambah, sama seperti mode solo.
+    setFilters((prev) =>
+      data.ownScore > prev.lastOwnScore
+        ? { ...prev, lastOwnScore: data.ownScore, cue: { id: Date.now(), kind: 'capture' } }
+        : { ...prev, lastOwnScore: data.ownScore },
+    )
+  }, [data.ownScore])
+  useEffect(() => {
+    const room = gameRooms.data
+    if (!room || room.status !== 'finished' || !room.winner || room.winner === 'draw') return
+    const kind = room.winner === room.seat ? 'win' : 'lose'
+    setFilters((prev) => (prev.cue?.kind === kind ? prev : { ...prev, cue: { id: Date.now(), kind } }))
+  }, [gameRooms.data])
 
   return (
     <div className="flex h-[100dvh] w-full touch-none items-stretch justify-center overflow-hidden overscroll-none bg-[#0a0a0b] p-2 sm:p-4">
@@ -201,6 +219,16 @@ export default function OthelloRoomPlay({ code }: Props) {
           isSoundOn={data.isSoundOn}
           onLoadOthelloGuide={loadOthelloGuide}
           onEditOthelloSound={editOthelloSound}
+        />
+
+        <GameAudio
+          isActive
+          isMusicOn={data.isSoundOn}
+          isSoundOn={data.isSoundOn}
+          bassScale={[98, 110, 130.81, 110]}
+          leadScale={[329.63, 392, 440, 493.88, 440, 392, 349.23, 329.63]}
+          stepDuration={0.36}
+          cue={data.cue}
         />
 
         <GameTurnStatus label={data.statusLabel} isWaiting={data.isWaiting} />

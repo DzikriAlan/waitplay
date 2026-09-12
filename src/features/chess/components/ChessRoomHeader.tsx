@@ -1,12 +1,16 @@
 'use client'
 
+import GameSoundToggle from '@/shared/components/reusable/GameSoundToggle'
+
 interface Props {
   onLoadChessExit: () => void
   seatLabel: string
   turnLabel: string
   moveTotal: number
   code: string
+  isSoundOn: boolean
   onLoadChessGuide: () => void
+  onEditChessSound: () => void
 }
 
 export default function ChessRoomHeader({
@@ -15,7 +19,9 @@ export default function ChessRoomHeader({
   turnLabel,
   moveTotal,
   code,
+  isSoundOn,
   onLoadChessGuide,
+  onEditChessSound,
 }: Props) {
   return (
     <header className="flex min-h-[48px] shrink-0 items-stretch gap-2">
@@ -54,6 +60,8 @@ export default function ChessRoomHeader({
         <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-[#a29d93]">Ruangan</span>
         <span className="text-[13px] font-black leading-none text-[#f2ede1]">{code}</span>
       </div>
+
+      <GameSoundToggle isSoundOn={isSoundOn} className="w-[38px] shrink-0" onEditGameSound={onEditChessSound} />
     </header>
   )
 }

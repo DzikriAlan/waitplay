@@ -15,10 +15,12 @@ interface Props {
   placement: number
   total: number
   isFullscreen: boolean
+  isSoundOn: boolean
   leaderboard: LeaderRow[]
   onSubmitSlitherRespawn: () => void
   onLoadSlitherExit: () => void
   onEditSlitherFullscreen: () => void
+  onEditSlitherSound: () => void
 }
 
 export default function SlitherHud({
@@ -28,10 +30,12 @@ export default function SlitherHud({
   placement,
   total,
   isFullscreen,
+  isSoundOn,
   leaderboard,
   onSubmitSlitherRespawn,
   onLoadSlitherExit,
   onEditSlitherFullscreen,
+  onEditSlitherSound,
 }: Props) {
   return (
     <>
@@ -57,6 +61,22 @@ export default function SlitherHud({
         ) : null}
 
         <div className="pointer-events-auto flex items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={isSoundOn}
+            aria-label={isSoundOn ? 'Matikan suara' : 'Nyalakan suara'}
+            onClick={onEditSlitherSound}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#3a3a42] bg-[#121214]/90 text-[#f2ede1]"
+          >
+            <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 9.5h3.2L12 5.6v12.8L7.2 14.5H4z" strokeLinejoin="round" />
+              {isSoundOn ? (
+                <path d="M15.6 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8" strokeLinecap="round" />
+              ) : (
+                <path d="M16 9.6l4.4 4.8M20.4 9.6L16 14.4" strokeLinecap="round" />
+              )}
+            </svg>
+          </button>
           <button
             type="button"
             aria-pressed={isFullscreen}

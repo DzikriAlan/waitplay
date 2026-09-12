@@ -8,6 +8,7 @@ import { useGameRoomsControllers } from '@/features/game-rooms/controllers/gameR
 import GameRoomsInvite from '@/features/game-rooms/components/GameRoomsInvite'
 import GameTurnStatus from '@/shared/components/reusable/GameTurnStatus'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
+import GameAudio, { type GameAudioCue } from '@/shared/components/reusable/GameAudio'
 import GomokuHeader from './GomokuHeader'
 import GomokuBoard from './GomokuBoard'
 import GomokuResult from './GomokuResult'
@@ -27,6 +28,8 @@ export default function GomokuRoomPlay({ code }: Props) {
     isGuideOpen: false,
     isExitOpen: false,
     isSoundOn: true,
+    cue: null as GameAudioCue | null,
+    lastOwnScore: 0,
     isCopied: false,
     inviteUrl: '',
     pagination: { currentPage: 1, perPage: 0, totalItem: 0, totalPage: 1 },
@@ -105,6 +108,7 @@ export default function GomokuRoomPlay({ code }: Props) {
       isLeftByRival: !!room?.leftSeat && room.leftSeat !== seat,
       resultLabel: getResultLabel(room?.winner ?? ''),
       isSoundOn: filters.isSoundOn,
+      cue: filters.cue,
     }
   }, [gameRooms, filters, code, text, activeLocale])
   const submitGomokuCell = (cellIndex: number) => {
@@ -188,6 +192,20 @@ export default function GomokuRoomPlay({ code }: Props) {
       return
     }
   }, [gameRooms.data?.token, code])
+  useEffect(() => {
+    // Bunyi diketuk saat pemain berhasil menaruh batu baru di papan, sama seperti mode solo.
+    setFilters((prev) =>
+      data.ownScore > prev.lastOwnScore
+        ? { ...prev, lastOwnScore: data.ownScore, cue: { id: Date.now(), kind: 'capture' } }
+        : { ...prev, lastOwnScore: data.ownScore },
+    )
+  }, [data.ownScore])
+  useEffect(() => {
+    const room = gameRooms.data
+    if (!room || room.status !== 'finished' || !room.winner || room.winner === 'draw') return
+    const kind = room.winner === room.seat ? 'win' : 'lose'
+    setFilters((prev) => (prev.cue?.kind === kind ? prev : { ...prev, cue: { id: Date.now(), kind } }))
+  }, [gameRooms.data])
 
   return (
     <div className="flex h-[100dvh] w-full touch-none items-stretch justify-center overflow-hidden overscroll-none bg-[#0a0a0b] p-2 sm:p-4">
@@ -197,6 +215,16 @@ export default function GomokuRoomPlay({ code }: Props) {
           isSoundOn={data.isSoundOn}
           onLoadGomokuGuide={loadGomokuGuide}
           onEditGomokuSound={editGomokuSound}
+        />
+
+        <GameAudio
+          isActive
+          isMusicOn={data.isSoundOn}
+          isSoundOn={data.isSoundOn}
+          bassScale={[87.31, 98, 116.54, 98]}
+          leadScale={[349.23, 415.3, 466.16, 523.25, 466.16, 415.3, 392, 349.23]}
+          stepDuration={0.36}
+          cue={data.cue}
         />
 
         <GameTurnStatus label={data.statusLabel} isWaiting={data.isWaiting} />

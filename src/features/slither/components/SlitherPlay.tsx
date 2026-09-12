@@ -5,6 +5,7 @@ import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import { getSlitherRoomCode, getSlitherSeed } from '@/shared/lib/slitherEngine'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
+import GameAudio, { type GameAudioCue } from '@/shared/components/reusable/GameAudio'
 import { useSlitherStates } from '../states/slitherStates'
 import { useSlitherControllers } from '../controllers/slitherControllers'
 import type { DataSlitherPlayer } from '../types/slitherTypes'
@@ -49,6 +50,8 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
     skinIndex: 0,
     isExitOpen: false,
     isFullscreen: false,
+    isSoundOn: true,
+    cue: null as GameAudioCue | null,
     score: 0,
     isDead: false,
     isWin: false,
@@ -92,6 +95,8 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
       isJoinDisabled: filters.roomCode.trim().length < 3,
       botCount: filters.mode === 'solo' ? SOLO_BOTS : ONLINE_BOTS,
       leaderboard,
+      isSoundOn: filters.isSoundOn,
+      cue: filters.cue,
     }
   }, [guest, filters, slitherArena, board])
 
@@ -151,6 +156,9 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
       score: 0,
       respawnNonce: prev.respawnNonce + 1,
     }))
+  }
+  const editSlitherSound = () => {
+    setFilters((prev) => ({ ...prev, isSoundOn: !prev.isSoundOn }))
   }
   const editSlitherFullscreen = () => {
     const getFullscreenElement = () => document.fullscreenElement
@@ -218,6 +226,11 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
     setGetSlitherArena({ code, playerId: data.identityId, name: data.identityName })
     setFilters((prev) => ({ ...prev, phase: 'arena', mode: 'room', roomCode: code }))
   }, [initialRoom, data.isReady, data.identityId, data.identityName, filters.phase, setGetSlitherArena])
+  useEffect(() => {
+    if (!filters.isDead && !filters.isWin) return
+    const kind = filters.isWin ? 'win' : 'lose'
+    setFilters((prev) => (prev.cue?.kind === kind ? prev : { ...prev, cue: { id: Date.now(), kind } }))
+  }, [filters.isDead, filters.isWin])
 
   if (!data.isArena) {
     return (
@@ -239,6 +252,17 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
 
   return (
     <div ref={stageRef} className="relative h-[100dvh] w-full touch-none overflow-hidden bg-[#0a0a0b]">
+      <GameAudio
+        isActive
+        isMusicOn={data.isSoundOn}
+        isSoundOn={data.isSoundOn}
+        bassScale={[73.42, 73.42, 98, 87.31]}
+        leadScale={[293.66, 349.23, 415.3, 349.23, 293.66, 261.63, 293.66, 349.23]}
+        stepDuration={0.4}
+        musicLevel={0.07}
+        cue={data.cue}
+      />
+
       <SlitherArena
         isActive
         selfId={data.identityId}
@@ -263,10 +287,12 @@ export default function SlitherPlay({ initialRoom = '' }: Props) {
         placement={filters.placement}
         total={filters.total}
         isFullscreen={filters.isFullscreen}
+        isSoundOn={data.isSoundOn}
         leaderboard={data.leaderboard}
         onSubmitSlitherRespawn={submitSlitherRespawn}
         onLoadSlitherExit={loadSlitherExit}
         onEditSlitherFullscreen={editSlitherFullscreen}
+        onEditSlitherSound={editSlitherSound}
       />
 
       {device.isTouch ? <SlitherTouch controlRef={controlRef} /> : null}
