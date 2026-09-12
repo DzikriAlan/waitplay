@@ -118,12 +118,18 @@ export default function UnoCard({
     onSubmitUnoCard(card.id)
   }
 
+  // Selama mode pilih aktif, tombol tidak boleh ikut memakai transform hover/active sendiri —
+  // itu yang membuat kartu terlihat "lompat kembali" saat baru saja diberi highlight terpilih.
+  const interactionClass = isSelectMode
+    ? 'transition-opacity active:opacity-70'
+    : 'transition-transform hover:-translate-y-3 active:-translate-y-1'
+
   return (
     <button
       type="button"
       aria-label={`Play card ${card.color ?? 'wild'} ${card.value}`}
       onClick={submitUnoTap}
-      className={`shrink-0 transition-transform hover:-translate-y-3 active:-translate-y-1 ${isDimmed ? 'opacity-40' : ''}`}
+      className={`shrink-0 ${interactionClass} ${isDimmed ? 'opacity-40' : ''}`}
     >
       {face}
     </button>
