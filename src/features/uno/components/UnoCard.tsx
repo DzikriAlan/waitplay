@@ -2,11 +2,18 @@
 
 import type { UnoCard as UnoCardType } from '../types/unoTypes'
 
+const NON_NUMBER_VALUES = new Set(['skip', 'reverse', 'draw2', 'wild', 'wild4'])
+
 interface Props {
   card: UnoCardType | null
   isBack?: boolean
   size?: 'xs' | 'sm' | 'md' | 'lg'
+  isSelectMode?: boolean
+  isSelected?: boolean
+  // Kosong berarti belum ada kartu terpilih, jadi kartu angka apa pun boleh jadi pilihan pertama.
+  selectedValue?: string
   onSubmitUnoCard?: (cardId: string) => void
+  onEditUnoSelect?: (cardId: string) => void
 }
 
 const COLOR_TONE: Record<string, string> = {
@@ -36,9 +43,13 @@ export default function UnoCard({
   card,
   isBack = false,
   size = 'md',
+  isSelectMode = false,
+  isSelected = false,
+  selectedValue = '',
   onSubmitUnoCard,
+  onEditUnoSelect,
 }: Props) {
-  const frame = `relative shrink-0 overflow-hidden rounded-lg border-[3px] ${SIZE_TONE[size]}`
+  const frame = `relative shrink-0 overflow-hidden rounded-lg border-[3px] ${SIZE_TONE[size]} ${isSelected ? 'ring-4 ring-[#f0b429] ring-offset-2 ring-offset-[#121214] -translate-y-3' : ''}`
 
   const getCornerLabel = (value: string) => {
     if (value === 'skip') return '⊘'
@@ -93,12 +104,25 @@ export default function UnoCard({
 
   if (!onSubmitUnoCard) return face
 
+  // Kartu angka polos boleh jadi pilihan pertama; setelah ada pilihan, hanya angka yang sama yang ikut bisa dipilih.
+  const isNumberCard = !NON_NUMBER_VALUES.has(card.value)
+  const isSelectable = isNumberCard && (!selectedValue || card.value === selectedValue)
+  const isDimmed = isSelectMode && !isSelected && !isSelectable
+
+  const submitUnoTap = () => {
+    if (isSelectMode) {
+      if (isSelectable) onEditUnoSelect?.(card.id)
+      return
+    }
+    onSubmitUnoCard(card.id)
+  }
+
   return (
     <button
       type="button"
       aria-label={`Play card ${card.color ?? 'wild'} ${card.value}`}
-      onClick={() => onSubmitUnoCard(card.id)}
-      className="shrink-0 transition-transform hover:-translate-y-3 active:-translate-y-1"
+      onClick={submitUnoTap}
+      className={`shrink-0 transition-transform hover:-translate-y-3 active:-translate-y-1 ${isDimmed ? 'opacity-40' : ''}`}
     >
       {face}
     </button>

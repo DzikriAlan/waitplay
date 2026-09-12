@@ -108,7 +108,9 @@
             "Giliranmu: buang satu kartu yang warnanya atau angkanya sama dengan kartu teratas.",
             "Kartu aksi mengubah jalannya permainan: Skip melewati giliran lawan, Reverse membalik arah, dan Draw Two membuat pemain berikutnya menarik dua kartu.",
             "Kartu Wild boleh dibuang kapan saja dan kamu yang memilih warna berikutnya; Wild Draw Four menambah empat kartu untuk pemain sesudahmu.",
-            "Kalau tidak ada kartu yang cocok, tarik satu kartu dari tumpukan. Bila kartu itu bisa dibuang, kamu boleh langsung membuangnya, jika tidak giliran berpindah."
+            "Kalau tidak ada kartu yang cocok, tarik satu kartu dari tumpukan. Bila kartu itu bisa dibuang, kamu boleh langsung membuangnya, jika tidak giliran berpindah.",
+            "Tekan \"Pilih kembar\", lalu ketuk dua kartu angka yang sama (boleh beda warna) dan tekan \"Buang\" untuk membuang keduanya sekaligus di giliran yang sama.",
+            "Kena Draw Two atau Wild Draw Four? Kalau kamu punya +2 atau +4 di tangan, kamu wajib menimpanya supaya tarikan menumpuk dan berpindah ke pemain berikutnya; kalau tidak punya, kamu harus menarik seluruh tumpukan kartunya."
           ],
           "win": [
             "Tekan tombol UNO saat kartumu tersisa dua dan kamu akan membuang satu di giliran itu.",

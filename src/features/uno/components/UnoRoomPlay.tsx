@@ -7,6 +7,7 @@ import { useGameRoomsControllers } from '@/features/game-rooms/controllers/gameR
 import GameRoomsInvite from '@/features/game-rooms/components/GameRoomsInvite'
 import GameTurnStatus from '@/shared/components/reusable/GameTurnStatus'
 import GameExitConfirm from '@/shared/components/reusable/GameExitConfirm'
+import GameAudio, { type GameAudioCue } from '@/shared/components/reusable/GameAudio'
 import UnoHeader from './UnoHeader'
 import UnoBoard from './UnoBoard'
 import UnoHand from './UnoHand'
@@ -38,6 +39,9 @@ export default function UnoRoomPlay({ code }: Props) {
     isCopied: false,
     isSoundOn: true,
     inviteUrl: '',
+    cue: null as GameAudioCue | null,
+    isSelectMode: false,
+    selectedCardIds: [] as string[],
     pagination: { currentPage: 1, perPage: 0, totalItem: 0, totalPage: 1 },
   })
   const data = useMemo(() => {
@@ -47,6 +51,11 @@ export default function UnoRoomPlay({ code }: Props) {
     const hand = (uno?.hand ?? []) as UnoCard[]
 
     const getSeatLabel = (value: string) => `Pemain ${value.replace('p', '')}`
+    const getSelectedValue = () => {
+      const firstId = filters.selectedCardIds[0]
+      if (!firstId) return ''
+      return hand.find((item) => item.id === firstId)?.value ?? ''
+    }
     const getOpponents = () =>
       (uno?.opponents ?? []).map((opponent, index) => ({
         id: index,
@@ -65,6 +74,8 @@ export default function UnoRoomPlay({ code }: Props) {
     const isPlaying = room?.status === 'playing'
     const isMyTurn = isPlaying && !!seat && room?.turn === seat
     const isHost = !!seat && seat === room?.hostSeat
+    const pendingDrawTotal = uno?.pendingDrawTotal ?? 0
+    const hasCounterCard = hand.some((card) => card.value === 'draw2' || card.value === 'wild4')
 
     return {
       isGuideOpen: filters.isGuideOpen,
@@ -89,7 +100,9 @@ export default function UnoRoomPlay({ code }: Props) {
       statusLabel: !seat
         ? 'Ruangan penuh, kamu menonton'
         : isMyTurn
-          ? 'Giliranmu, buang kartu'
+          ? pendingDrawTotal > 0
+            ? `Timpa dengan +2/+4 atau tarik ${pendingDrawTotal} kartu`
+            : 'Giliranmu, buang kartu'
           : (room?.rivalOnlineTotal ?? 0) > 0
             ? 'Menunggu langkah lawan'
             : 'Menunggu lawan tersambung',
@@ -101,8 +114,10 @@ export default function UnoRoomPlay({ code }: Props) {
       drawTotal: uno?.drawTotal ?? 0,
       cardTotal: hand.length,
       hasCalledUno: uno?.hasCalledUno ?? false,
-      isDrawDisabled: !isMyTurn || !!uno?.hasDrawnThisTurn || storeGameRoomsMove.isPending,
+      isDrawDisabled:
+        !isMyTurn || storeGameRoomsMove.isPending || (pendingDrawTotal > 0 ? hasCounterCard : !!uno?.hasDrawnThisTurn),
       isPassVisible: isMyTurn && !!uno?.hasDrawnThisTurn,
+      pendingDrawTotal,
       isUnoVisible: isPlaying && hand.length === 2,
       isColorPickerOpen: !!filters.pendingWildCardId,
       isLobbyOpen: !!room && room.status === 'lobby',
@@ -116,11 +131,17 @@ export default function UnoRoomPlay({ code }: Props) {
       inviteUrl: filters.inviteUrl,
       isCopied: filters.isCopied,
       isSoundOn: filters.isSoundOn,
+      cue: filters.cue,
       isFinished: room?.status === 'finished',
       leftSeat: room?.leftSeat ?? '',
       isLeftByRival: !!room?.leftSeat && room.leftSeat !== seat,
       resultLabel: getResultLabel(room?.winner ?? ''),
       isMyTurn,
+      isSelectMode: filters.isSelectMode,
+      isSelectDisabled: !isMyTurn || pendingDrawTotal > 0,
+      selectedCardIds: filters.selectedCardIds,
+      selectedValue: getSelectedValue(),
+      isMultiConfirmDisabled: filters.selectedCardIds.length < 2 || storeGameRoomsMove.isPending,
     }
   }, [gameRooms, filters, code, storeGameRoomsMove.isPending, storeGameRoomsStart.isPending, storeGameRoomsSeats.isPending, text, activeLocale])
   const submitUnoCard = (cardId: string) => {
@@ -142,6 +163,35 @@ export default function UnoRoomPlay({ code }: Props) {
 
     setGameRooms({ status: 'success', data: getPredictedRoom() })
     storeGameRoomsMove.mutate({ code, token: room.token, action: 'play', cardId })
+  }
+  const loadUnoSelect = () => {
+    if (data.isSelectDisabled) return
+    setFilters((prev) => ({ ...prev, isSelectMode: true, selectedCardIds: [] }))
+  }
+  const editUnoSelect = (cardId: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      selectedCardIds: prev.selectedCardIds.includes(cardId)
+        ? prev.selectedCardIds.filter((id) => id !== cardId)
+        : [...prev.selectedCardIds, cardId],
+    }))
+  }
+  const submitUnoCards = () => {
+    const room = gameRooms.data
+    const cardIds = filters.selectedCardIds
+    if (!room || !data.isMyTurn || cardIds.length < 2) return
+
+    const getPredictedRoom = () => ({
+      ...room,
+      uno: room.uno ? { ...room.uno, hand: room.uno.hand.filter((item) => !cardIds.includes(item.id)) } : room.uno,
+    })
+
+    setGameRooms({ status: 'success', data: getPredictedRoom() })
+    storeGameRoomsMove.mutate({ code, token: room.token, action: 'play', cardIds })
+    setFilters((prev) => ({ ...prev, isSelectMode: false, selectedCardIds: [] }))
+  }
+  const clearUnoSelect = () => {
+    setFilters((prev) => ({ ...prev, isSelectMode: false, selectedCardIds: [] }))
   }
   const submitUnoColor = (color: UnoColor) => {
     const room = gameRooms.data
@@ -256,10 +306,43 @@ export default function UnoRoomPlay({ code }: Props) {
       return
     }
   }, [gameRooms.data?.token, code])
+  useEffect(() => {
+    // Kartu masuk ke tumpukan buangan dan kemenangan/kekalahan dijadikan penanda bunyi, sama seperti
+    // mode solo vs bot, supaya ruangan daring tidak lagi bisu.
+    const room = gameRooms.data
+    if (!room) return
+    const getCue = (kind: GameAudioCue['kind']): GameAudioCue => ({ id: Date.now(), kind })
+    if (room.status === 'finished' && room.winner) {
+      const kind = room.winner === room.seat ? 'win' : 'lose'
+      setFilters((prev) => (prev.cue?.kind === kind ? prev : { ...prev, cue: getCue(kind) }))
+      return
+    }
+    const id = room.uno?.discardTotal ?? 0
+    setFilters((prev) => {
+      if (!id || prev.cue?.id === id) return prev
+      return { ...prev, cue: { id, kind: 'move' } }
+    })
+  }, [gameRooms.data])
+  useEffect(() => {
+    // Mode pilih kartu kembar dibatalkan begitu giliran berpindah supaya tidak menunjuk kartu basi.
+    if (!data.isMyTurn) {
+      setFilters((prev) => (prev.isSelectMode ? { ...prev, isSelectMode: false, selectedCardIds: [] } : prev))
+    }
+  }, [data.isMyTurn])
 
   return (
     <div className="flex h-[100dvh] w-full items-stretch justify-center overflow-hidden bg-[#0a0a0b] p-2 sm:p-4">
       <div className="flex h-full w-full max-w-[480px] flex-col overflow-hidden rounded-2xl border border-[#26262b] bg-[#0f0f11]">
+        <GameAudio
+          isActive
+          isMusicOn={data.isSoundOn}
+          isSoundOn={data.isSoundOn}
+          bassScale={[123.47, 123.47, 164.81, 146.83]}
+          leadScale={[493.88, 587.33, 739.99, 659.25, 587.33, 493.88, 440, 587.33]}
+          stepDuration={0.3}
+          cue={data.cue}
+        />
+
         <UnoHeader
           onLoadUnoExit={loadUnoExit}
           roomCode={data.code}
@@ -294,10 +377,20 @@ export default function UnoRoomPlay({ code }: Props) {
           isPassVisible={data.isPassVisible}
           isUnoVisible={data.isUnoVisible}
           hasCalledUno={data.hasCalledUno}
+          isSelectMode={data.isSelectMode}
+          isSelectDisabled={data.isSelectDisabled}
+          selectedCardIds={data.selectedCardIds}
+          selectedValue={data.selectedValue}
+          isMultiConfirmDisabled={data.isMultiConfirmDisabled}
+          pendingDrawTotal={data.pendingDrawTotal}
           onSubmitUnoCard={submitUnoCard}
           onLoadUnoDraw={loadUnoDraw}
           onLoadUnoPass={loadUnoPass}
           onSubmitUnoCall={submitUnoCall}
+          onLoadUnoSelect={loadUnoSelect}
+          onEditUnoSelect={editUnoSelect}
+          onSubmitUnoCards={submitUnoCards}
+          onClearUnoSelect={clearUnoSelect}
         />
       </div>
 

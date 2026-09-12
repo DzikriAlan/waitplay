@@ -28,6 +28,7 @@ export default function UnoPlay() {
     unoGame,
     setUnoInit,
     setUnoPlayCard,
+    setUnoPlayCards,
     setUnoPickColor,
     setUnoDrawCard,
     setUnoPass,
@@ -45,6 +46,8 @@ export default function UnoPlay() {
     isSoundOn: true,
     isInviting: false,
     cue: null as GameAudioCue | null,
+    isSelectMode: false,
+    selectedCardIds: [] as string[],
   })
   const data = useMemo(() => {
     const game = unoGame.data
@@ -53,6 +56,13 @@ export default function UnoPlay() {
     const topCard = game?.discardPile[game.discardPile.length - 1] ?? null
     const isMyTurn = !!game && game.currentPlayer === 0 && game.winnerId === null
     const handCards = (human?.hand ?? []).map((card) => ({ card }))
+    const getSelectedValue = () => {
+      const firstId = filters.selectedCardIds[0]
+      if (!firstId) return ''
+      return handCards.find((item) => item.card.id === firstId)?.card.value ?? ''
+    }
+    const pendingDrawTotal = game?.pendingDrawTotal ?? 0
+    const hasCounterCard = (human?.hand ?? []).some((card) => card.value === 'draw2' || card.value === 'wild4')
 
     return {
       isGuideOpen: filters.isGuideOpen,
@@ -85,8 +95,9 @@ export default function UnoPlay() {
       lastAction: game?.lastAction ?? '',
       cardTotal: human?.hand.length ?? 0,
       isMyTurn,
-      isDrawDisabled: !isMyTurn || !!game?.hasDrawnThisTurn,
+      isDrawDisabled: !isMyTurn || (pendingDrawTotal > 0 ? hasCounterCard : !!game?.hasDrawnThisTurn),
       isPassVisible: isMyTurn && !!game?.hasDrawnThisTurn,
+      pendingDrawTotal,
       isUnoVisible: isMyTurn && (human?.hand.length ?? 0) === 2,
       hasCalledUno: !!human?.hasCalledUno,
       isColorPickerOpen: !!game?.pendingWildCardId,
@@ -96,10 +107,35 @@ export default function UnoPlay() {
       isSoundOn: filters.isSoundOn,
       isInviting: filters.isInviting,
       cue: filters.cue,
+      isSelectMode: filters.isSelectMode,
+      isSelectDisabled: !isMyTurn || pendingDrawTotal > 0,
+      selectedCardIds: filters.selectedCardIds,
+      selectedValue: getSelectedValue(),
+      isMultiConfirmDisabled: filters.selectedCardIds.length < 2,
     }
   }, [unoGame, filters, text, activeLocale])
   const submitUnoCard = (cardId: string) => {
     setUnoPlayCard(cardId)
+  }
+  const loadUnoSelect = () => {
+    if (data.isSelectDisabled) return
+    setFilters((prev) => ({ ...prev, isSelectMode: true, selectedCardIds: [] }))
+  }
+  const editUnoSelect = (cardId: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      selectedCardIds: prev.selectedCardIds.includes(cardId)
+        ? prev.selectedCardIds.filter((id) => id !== cardId)
+        : [...prev.selectedCardIds, cardId],
+    }))
+  }
+  const submitUnoCards = () => {
+    if (filters.selectedCardIds.length < 2) return
+    setUnoPlayCards(filters.selectedCardIds)
+    setFilters((prev) => ({ ...prev, isSelectMode: false, selectedCardIds: [] }))
+  }
+  const clearUnoSelect = () => {
+    setFilters((prev) => ({ ...prev, isSelectMode: false, selectedCardIds: [] }))
   }
   const submitUnoColor = (color: UnoColor) => {
     setUnoPickColor(color)
@@ -177,6 +213,12 @@ export default function UnoPlay() {
     })
   }, [unoGame])
   useEffect(() => {
+    // Mode pilih kartu kembar dibatalkan begitu giliran berpindah supaya tidak menunjuk kartu basi.
+    if (!data.isMyTurn) {
+      setFilters((prev) => (prev.isSelectMode ? { ...prev, isSelectMode: false, selectedCardIds: [] } : prev))
+    }
+  }, [data.isMyTurn])
+  useEffect(() => {
     const game = unoGame.data
     if (!game || game.winnerId !== null || game.currentPlayer === 0) return
     const timer = window.setTimeout(() => setUnoBotTurn(), 900)
@@ -231,10 +273,20 @@ export default function UnoPlay() {
           isPassVisible={data.isPassVisible}
           isUnoVisible={data.isUnoVisible}
           hasCalledUno={data.hasCalledUno}
+          isSelectMode={data.isSelectMode}
+          isSelectDisabled={data.isSelectDisabled}
+          selectedCardIds={data.selectedCardIds}
+          selectedValue={data.selectedValue}
+          isMultiConfirmDisabled={data.isMultiConfirmDisabled}
+          pendingDrawTotal={data.pendingDrawTotal}
           onSubmitUnoCard={submitUnoCard}
           onLoadUnoDraw={loadUnoDraw}
           onLoadUnoPass={loadUnoPass}
           onSubmitUnoCall={submitUnoCall}
+          onLoadUnoSelect={loadUnoSelect}
+          onEditUnoSelect={editUnoSelect}
+          onSubmitUnoCards={submitUnoCards}
+          onClearUnoSelect={clearUnoSelect}
         />
       </div>
 
