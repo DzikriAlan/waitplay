@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import {
-  GAME_ROOM_SEAT_TOTAL,
+  GAME_ROOM_SEAT_MIN,
   getGameRoomCode,
   getGameRoomNewState,
   getGameRoomToken,
@@ -14,7 +14,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const game = String(req.body?.game ?? '')
   const name = String(req.body?.name ?? 'Pemain 1').slice(0, 24)
-  const seatTotal = GAME_ROOM_SEAT_TOTAL[game]
+  // Ruangan baru dimulai untuk dua pemain di semua permainan; tuan rumah UNO masih boleh
+  // menambah kursi lewat panel undangan setelah ruangan terbentuk.
+  const seatTotal = GAME_ROOM_SEAT_MIN[game]
   if (!seatTotal) {
     return postApiError(res, {
       status: 422,
