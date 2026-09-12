@@ -6,11 +6,11 @@ import { getGameRoomSubscription } from '@/shared/lib/gameRoomEvents'
 import { postApiMethodNotAllowed } from '@/shared/lib/apiResponse'
 
 const PING_INTERVAL = 15000
-// Siaran dalam proses menutup kebutuhan utama; pembacaan cadangan tetap ada supaya perubahan dari
-// instans lain ikut terkirim. Denyutnya dilonggarkan dan tidak lagi memaksa bacaan segar, jadi
-// singgahan proses boleh menjawab: kehadiran tidak butuh ketelitian empat detik, sedangkan langkah
-// lawan dari instans yang sama sudah dikabarkan seketika lewat getGameRoomSubscription.
-const SAFETY_INTERVAL = 15000
+// Siaran dalam proses hanya menjangkau koneksi di instans yang sama; ketika langkah lawan ditulis
+// oleh instans lain, pembacaan cadangan inilah satu-satunya jalan pesan itu sampai. Denyutnya harus
+// tetap rapat dan memaksa bacaan segar (lewati singgahan proses), atau pemain bisa terlihat
+// menunggu langkah lawan padahal langkahnya sudah tersimpan di instans lain.
+const SAFETY_INTERVAL = 4000
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return postApiMethodNotAllowed(res, 'GET')
@@ -61,7 +61,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Denyut kehadiran menandai kursi masih dipakai supaya tidak diambil alih pemain lain.
   const safetyTimer = setInterval(() => {
     if (res.writableEnded || res.destroyed) return clearStream()
-    void updateGameRoomSeen(code, token).then((room) => postRoomState(room))
+    // Baris dibaca segar supaya langkah lawan yang ditulis instans lain tidak tertahan singgahan.
+    void updateGameRoomSeen(code, token, true).then((room) => postRoomState(room))
   }, SAFETY_INTERVAL)
   const pingTimer = setInterval(() => {
     if (res.writableEnded || res.destroyed) return clearStream()
