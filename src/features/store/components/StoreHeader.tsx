@@ -31,14 +31,15 @@ export default function StoreHeader({
 
   return (
     <header className="flex shrink-0 items-start justify-between gap-3">
-      <div className="min-w-0">
-        <p className="text-[38px] font-black uppercase leading-[0.82] tracking-[-0.04em] text-[#f2ede1] min-[360px]:text-[46px] sm:text-[56px] lg:text-[68px]">
+      {/* Satu-satunya h1 di beranda memuat nama brand dan kata kunci utama untuk mesin pencari. */}
+      <h1 className="min-w-0">
+        <span className="block text-[38px] font-black uppercase leading-[0.82] tracking-[-0.04em] text-[#f2ede1] min-[360px]:text-[46px] sm:text-[56px] lg:text-[68px]">
           Waitplay
-        </p>
-        <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.32em] text-[#f2ede1]/85 sm:mt-2 sm:text-[12px] sm:tracking-[0.4em]">
+        </span>
+        <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.32em] text-[#f2ede1]/85 sm:mt-2 sm:text-[12px] sm:tracking-[0.4em]">
           Game Collection
-        </p>
-      </div>
+        </span>
+      </h1>
 
       {/* Di layar lebar semuanya tampil sejajar. */}
       <div className="mt-1 hidden shrink-0 items-center gap-3 sm:flex">
