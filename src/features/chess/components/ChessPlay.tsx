@@ -116,7 +116,7 @@ export default function ChessPlay() {
         filters.isThinking ||
         isEngineDriven ||
         !!game.pendingPromotion,
-      isUndoDisabled: !game || filters.isThinking || game.moveTotal < 2,
+      isUndoDisabled: !game || !game.moveTotal || !!game.pendingPromotion,
       isPromotionOpen: !!game?.pendingPromotion,
       isFinished: !!game?.isFinished,
       resultTitle: game?.resultTitle ?? '',
@@ -280,6 +280,8 @@ export default function ChessPlay() {
           onLoadChessExit={loadChessExit}
           isInviteLoading={data.isInviting}
           onSubmitChessInvite={submitChessInvite}
+          isUndoDisabled={data.isUndoDisabled}
+          onLoadChessUndo={loadChessUndo}
           onLoadChessGuide={loadChessGuide}
           onLoadChessSettings={loadChessSettings}
         />
@@ -368,13 +370,22 @@ export default function ChessPlay() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#a29d93]">Game over</p>
             <p className="mt-2 text-2xl font-black uppercase leading-none text-[#f2ede1]">{data.resultTitle}</p>
             <p className="mt-2 text-[13px] font-medium text-[#9aa3b2]">{data.resultSubtitle}</p>
-            <button
-              type="button"
-              onClick={clearChessGame}
-              className="mt-6 w-full rounded-xl bg-[#f2ede1] py-3 text-[13px] font-semibold text-[#0a0a0b] transition-opacity active:opacity-80"
-            >
-              Play again
-            </button>
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={loadChessUndo}
+                className="rounded-xl border border-[#3a3a42] py-3 text-[13px] font-semibold text-[#f2ede1] transition-colors hover:border-[#f2ede1]"
+              >
+                Undo move
+              </button>
+              <button
+                type="button"
+                onClick={clearChessGame}
+                className="rounded-xl bg-[#f2ede1] py-3 text-[13px] font-semibold text-[#0a0a0b] transition-opacity active:opacity-80"
+              >
+                Play again
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

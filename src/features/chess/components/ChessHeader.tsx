@@ -5,6 +5,8 @@ interface Props {
   onLoadChessExit: () => void
   isInviteLoading?: boolean
   onSubmitChessInvite?: () => void
+  isUndoDisabled: boolean
+  onLoadChessUndo: () => void
   onLoadChessGuide: () => void
   onLoadChessSettings: () => void
 }
@@ -13,6 +15,8 @@ export default function ChessHeader({
   onLoadChessExit,
   isInviteLoading = false,
   onSubmitChessInvite,
+  isUndoDisabled,
+  onLoadChessUndo,
   onLoadChessGuide,
   onLoadChessSettings,
 }: Props) {
@@ -42,6 +46,20 @@ export default function ChessHeader({
         <span className="text-[9px] font-semibold uppercase tracking-[0.16em]">
           {isInviteLoading ? 'Menyiapkan…' : 'Main berdua'}
         </span>
+      </button>
+
+      {/* Undo ditaruh di topbar supaya langsung terlihat tanpa harus membuka pengaturan. */}
+      <button
+        type="button"
+        aria-label="Undo move"
+        disabled={isUndoDisabled}
+        onClick={onLoadChessUndo}
+        className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border border-[#26262b] bg-[#121214] text-[#f2ede1] transition-colors hover:border-[#43434d] disabled:opacity-35"
+      >
+        <svg viewBox="0 0 24 24" className="h-[17px] w-[17px]" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M9 14 4 9l5-5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
 
       <button

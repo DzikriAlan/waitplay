@@ -179,7 +179,8 @@ export const useChessStates = create<ChessStore>((set, get) => {
 
     setChessUndo: () => {
       const data = get().chessGame.data
-      if (!data) return
+      if (!data || !data.moveTotal) return
+      // Undo mundur sampai giliran pemain lagi: langkah engine dan langkah pemain sebelumnya ikut dibatalkan.
       chess.undo()
       if (chess.turn() !== PLAYER_COLOR) chess.undo()
       updateGame(null)
