@@ -7,6 +7,8 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.waitpl
 
 export const SITE_IMAGE = '/waitplay-mark.png'
 
+export const SITE_LOGO = '/icon-512.png'
+
 export const getAbsoluteUrl = (path: string) => `${SITE_URL}${path}`
 
 export const getIndexablePaths = () => ['/', ...STORE_GAMES.filter((game) => game.isAvailable).map((game) => game.path)]
@@ -58,11 +60,22 @@ export const getHomeJsonLd = (description: string) => ({
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'WebSite',
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
       name: SITE_NAME,
-      alternateName: 'Waitplay Game Collection',
-      url: SITE_URL,
+      url: `${SITE_URL}/`,
+      logo: getAbsoluteUrl(SITE_LOGO),
+    },
+    {
+      // Nama dan alternateName dibaca Google untuk label nama situs di hasil pencarian.
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: SITE_NAME,
+      alternateName: ['Waitplay Game Collection', 'waitplay.space'],
+      url: `${SITE_URL}/`,
       description,
+      inLanguage: ['en', 'id'],
+      publisher: { '@id': `${SITE_URL}/#organization` },
     },
     {
       '@type': 'ItemList',

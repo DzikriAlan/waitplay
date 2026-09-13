@@ -11,7 +11,7 @@ const Home: NextPage = () => {
   return (
     <>
       <PageSeo
-        title="Waitplay — Free Online Game Collection, No Sign Up"
+        title="Waitplay Game Collection — Free Online Games, No Sign Up"
         description={DESCRIPTION}
         path="/"
         jsonLd={getHomeJsonLd(DESCRIPTION)}
