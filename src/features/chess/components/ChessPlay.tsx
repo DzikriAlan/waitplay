@@ -49,6 +49,8 @@ export default function ChessPlay() {
   const { storeGameRooms } = useGameRoomsControllers()
   const router = useRouter()
   const engineRef = useRef<Worker | null>(null)
+  const isSearchingRef = useRef(false)
+  const staleSearchRef = useRef(0)
   const { activeLocale, text, setLocale, setLocaleInit } = useLocaleStates()
   const [filters, setFilters] = useState({
     isGuideOpen: false,
@@ -156,10 +158,20 @@ export default function ChessPlay() {
   const clearChessSettings = () => {
     setFilters((prev) => ({ ...prev, isSettingsOpen: false }))
   }
+  const clearChessSearch = () => {
+    // Pencarian engine yang masih jalan dihentikan, dan bestmove-nya diabaikan karena posisinya sudah berubah.
+    if (!isSearchingRef.current) return
+    isSearchingRef.current = false
+    staleSearchRef.current += 1
+    engineRef.current?.postMessage('stop')
+    setFilters((prev) => ({ ...prev, isThinking: false }))
+  }
   const loadChessUndo = () => {
+    clearChessSearch()
     setChessUndo()
   }
   const clearChessGame = () => {
+    clearChessSearch()
     setFilters((prev) => ({ ...prev, isSettingsOpen: false }))
     setChessRestart()
   }
@@ -223,6 +235,11 @@ export default function ChessPlay() {
       if (line.startsWith('uciok')) worker.postMessage('isready')
       if (line.startsWith('readyok')) setFilters((prev) => ({ ...prev, isEngineReady: true }))
       if (line.startsWith('bestmove')) {
+        if (staleSearchRef.current > 0) {
+          staleSearchRef.current -= 1
+          return
+        }
+        isSearchingRef.current = false
         const move = line.split(' ')[1]
         setFilters((prev) => ({ ...prev, isThinking: false }))
         if (move && move !== '(none)') {
@@ -250,6 +267,7 @@ export default function ChessPlay() {
 
     const level = LEVELS[filters.activeLevel]
     setFilters((prev) => ({ ...prev, isThinking: true }))
+    isSearchingRef.current = true
     worker.postMessage(`setoption name Skill Level value ${level.skill}`)
     worker.postMessage(`position fen ${game.fen}`)
     worker.postMessage(`go depth ${level.depth} movetime ${level.movetime}`)
