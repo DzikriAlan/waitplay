@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import ChessPlay from "@/features/chess/components/ChessPlay";
 
-const DESCRIPTION = "Play classic chess online against the Stockfish engine or invite a friend with a link. Free, in the browser, no sign up.";
+const DESCRIPTION = getGameDescription("chess");
 
 const Chess: NextPage = () => {
   return (

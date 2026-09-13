@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import DotsAndBoxesPlay from "@/features/dots-and-boxes/components/DotsAndBoxesPlay";
 
-const DESCRIPTION = "Draw lines between dots and claim boxes against a bot or a friend online. Free to play in your browser.";
+const DESCRIPTION = getGameDescription("dots-and-boxes");
 
 const DotsAndBoxes: NextPage = () => {
   return (

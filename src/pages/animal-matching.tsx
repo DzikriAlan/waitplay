@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import AnimalMatchingPlay from "@/features/animal-matching/components/AnimalMatchingPlay";
 
-const DESCRIPTION = "Match identical animal tiles connected by a path with at most two turns. Free to play in your browser, no sign up.";
+const DESCRIPTION = getGameDescription("animal-matching");
 
 const AnimalMatching: NextPage = () => {
   return (

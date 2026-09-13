@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import OthelloPlay from "@/features/othello/components/OthelloPlay";
 
-const DESCRIPTION = "Classic 8×8 Othello (Reversi): flank and flip discs against a bot or a friend online. Free, no sign up.";
+const DESCRIPTION = getGameDescription("othello");
 
 const Othello: NextPage = () => {
   return (

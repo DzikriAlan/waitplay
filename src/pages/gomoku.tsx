@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import GomokuPlay from "@/features/gomoku/components/GomokuPlay";
 
-const DESCRIPTION = "Get five in a row on a 15×15 board against a bot or invite a friend online. Free, no sign up.";
+const DESCRIPTION = getGameDescription("gomoku");
 
 const Gomoku: NextPage = () => {
   return (

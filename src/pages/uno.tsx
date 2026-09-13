@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import UnoPlay from "@/features/uno/components/UnoPlay";
 
-const DESCRIPTION = "Play classic UNO against bots or with friends online, with a neo brutalism look. Free, no sign up.";
+const DESCRIPTION = getGameDescription("uno");
 
 const Uno: NextPage = () => {
   return (

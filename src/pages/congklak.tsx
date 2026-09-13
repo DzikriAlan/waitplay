@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import CongklakPlay from "@/features/congklak/components/CongklakPlay";
 
-const DESCRIPTION = "Play congklak (mancala) against a bot or with a friend online, with capture and extra-turn rules. Free, no sign up.";
+const DESCRIPTION = getGameDescription("congklak");
 
 const Congklak: NextPage = () => {
   return (

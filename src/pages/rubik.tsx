@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import RubikPlay from "@/features/rubik/components/RubikPlay";
 
-const DESCRIPTION = "Turn and solve a 3D Rubik's cube right in your browser. Free, no download.";
+const DESCRIPTION = getGameDescription("rubik");
 
 const Rubik: NextPage = () => {
   return (

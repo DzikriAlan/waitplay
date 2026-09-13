@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import ColorSortPlay from "@/features/color-sort/components/ColorSortPlay";
 
-const DESCRIPTION = "Sort the colors into matching tubes in a 3D puzzle with endless levels. Free to play in your browser.";
+const DESCRIPTION = getGameDescription("color-sort");
 
 const ColorSort: NextPage = () => {
   return (

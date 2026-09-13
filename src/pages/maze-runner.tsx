@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import PageSeo from "@/shared/components/reusable/PageSeo";
-import { getGameJsonLd } from "@/shared/lib/seo";
+import { getGameDescription, getGameJsonLd } from "@/shared/lib/seo";
 import MazeRunnerPlay from "@/features/maze-runner/components/MazeRunnerPlay";
 
-const DESCRIPTION = "Guide the beetle through the maze to its cave before time runs out. A free maze runner game in your browser.";
+const DESCRIPTION = getGameDescription("maze-runner");
 
 const MazeRunner: NextPage = () => {
   return (
