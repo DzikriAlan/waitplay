@@ -88,6 +88,32 @@
       "emptySubtitle": "This category is empty for now. Try All instead.",
       "emptyAction": "Show All"
     },
+    "about": {
+      "title": "About Waitplay",
+      "body": [
+        "Waitplay is a free online game collection of light games you can play instantly in your browser, with no download and no sign up. Perfect for killing time in a queue, taking a short break, or playing with friends.",
+        "The collection covers puzzle, board, card, and arcade games: Chess against Stockfish, UNO, Tetris, 2048, Congklak, Othello, Gomoku, Dots & Box, Rubik 3D, Color Sort 3D, Animal Matching, Labirin Kumbang, and Slither 3D."
+      ],
+      "faqTitle": "FAQ",
+      "faq": [
+        {
+          "question": "Is Waitplay free?",
+          "answer": "Yes. Every game on Waitplay is free to play, and you never need to create an account."
+        },
+        {
+          "question": "Do I need to download anything?",
+          "answer": "No. All games run directly in your browser on both desktop and mobile."
+        },
+        {
+          "question": "Can I play online with friends?",
+          "answer": "Yes. Chess, UNO, Congklak, Dots & Box, Gomoku, Othello, and Slither 3D have online rooms. Create a room and share the invite link with your friends."
+        },
+        {
+          "question": "Who do I play against when playing alone?",
+          "answer": "Board and card games come with a bot opponent, while puzzle and arcade games are played solo."
+        }
+      ]
+    },
     "unit": {
       "minute": "min",
       "player": "player",

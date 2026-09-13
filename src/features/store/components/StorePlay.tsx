@@ -10,6 +10,7 @@ import StoreFilter from './StoreFilter'
 import StoreSection from './StoreSection'
 import StoreTile from './StoreTile'
 import StoreRow from './StoreRow'
+import StoreAbout from './StoreAbout'
 
 const LIST_TOTAL = 3
 
@@ -217,6 +218,8 @@ export default function StorePlay() {
             </div>
           </section>
         ) : null}
+
+        <StoreAbout about={data.text.about} />
       </div>
     </div>
   )

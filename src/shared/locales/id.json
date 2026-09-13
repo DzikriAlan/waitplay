@@ -88,6 +88,32 @@
       "emptySubtitle": "Kategori ini masih kosong. Cek 'All' dulu aja, ya.",
       "emptyAction": "Lihat Semua"
     },
+    "about": {
+      "title": "Tentang Waitplay",
+      "body": [
+        "Waitplay adalah game collection online gratis berisi game ringan yang bisa langsung dimainkan di browser, tanpa unduh dan tanpa daftar akun. Pas buat mengisi waktu saat menunggu antrean, jeda kerja, atau main bareng teman.",
+        "Koleksinya mencakup game puzzle, papan, kartu, dan arcade: Chess melawan Stockfish, UNO, Tetris, 2048, Congklak, Othello, Gomoku, Dots & Box, Rubik 3D, Color Sort 3D, Animal Matching, Labirin Kumbang, dan Slither 3D."
+      ],
+      "faqTitle": "Pertanyaan Umum",
+      "faq": [
+        {
+          "question": "Apakah Waitplay gratis?",
+          "answer": "Ya. Semua game di Waitplay gratis dimainkan tanpa perlu membuat akun."
+        },
+        {
+          "question": "Perlu mengunduh aplikasi?",
+          "answer": "Tidak. Semua game berjalan langsung di browser, baik di komputer maupun ponsel."
+        },
+        {
+          "question": "Bisa main bareng teman secara online?",
+          "answer": "Bisa. Chess, UNO, Congklak, Dots & Box, Gomoku, Othello, dan Slither 3D punya ruangan online. Buat ruangan, lalu bagikan tautan undangannya ke teman."
+        },
+        {
+          "question": "Kalau main sendiri, lawannya siapa?",
+          "answer": "Game papan dan kartu menyediakan bot sebagai lawan, sedangkan game puzzle dan arcade bisa dimainkan solo."
+        }
+      ]
+    },
     "unit": {
       "minute": "menit",
       "player": "pemain",
