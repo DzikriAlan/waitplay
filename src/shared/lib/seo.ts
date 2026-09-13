@@ -2,8 +2,8 @@ import { STORE_GAMES } from '@/features/store/static/storeGames'
 
 export const SITE_NAME = 'Waitplay'
 
-// Domain produksi dibaca dari env supaya canonical, sitemap, dan og:url selalu absolut.
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002').replace(/\/+$/, '')
+// Domain produksi jadi bawaan supaya canonical, sitemap, dan og:url tetap benar walau env belum diisi.
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.waitplay.space').replace(/\/+$/, '')
 
 export const SITE_IMAGE = '/waitplay-mark.png'
 
